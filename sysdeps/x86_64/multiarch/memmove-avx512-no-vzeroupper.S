@@ -31,12 +31,13 @@ ENTRY (__mempcpy_chk_avx512_no_vzeroupper)
 	jb	HIDDEN_JUMPTARGET (__chk_fail)
 END (__mempcpy_chk_avx512_no_vzeroupper)
 #endif
-
+#ifdef USE_MEMPCPY
 ENTRY (__mempcpy_avx512_no_vzeroupper)
 	mov	%RDI_LP, %RAX_LP
 	add	%RDX_LP, %RAX_LP
 	jmp	L(start)
 END (__mempcpy_avx512_no_vzeroupper)
+#endif
 
 #ifdef ADD_CHECKS
 ENTRY (__memmove_chk_avx512_no_vzeroupper)

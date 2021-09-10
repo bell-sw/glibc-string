@@ -179,11 +179,13 @@ ENTRY (MEMMOVE_CHK_SYMBOL (__mempcpy_chk, unaligned))
 END (MEMMOVE_CHK_SYMBOL (__mempcpy_chk, unaligned))
 #endif
 
+#ifdef USE_MEMPCPY
 ENTRY (MEMPCPY_SYMBOL (__mempcpy, unaligned))
 	mov	%RDI_LP, %RAX_LP
 	add	%RDX_LP, %RAX_LP
 	jmp	L(start)
 END (MEMPCPY_SYMBOL (__mempcpy, unaligned))
+#endif
 
 #if defined SHARED && IS_IN (libc) && defined ADD_CHECKS
 ENTRY (MEMMOVE_CHK_SYMBOL (__memmove_chk, unaligned))
@@ -229,6 +231,7 @@ END (__mempcpy_chk_erms)
 #endif
 
 /* Only used to measure performance of REP MOVSB.  */
+#ifdef USE_MEMPCPY
 ENTRY (__mempcpy_erms)
 	mov	%RDI_LP, %RAX_LP
 	/* Skip zero length.  */
@@ -237,6 +240,7 @@ ENTRY (__mempcpy_erms)
 	add	%RDX_LP, %RAX_LP
 	jmp	L(start_movsb)
 END (__mempcpy_erms)
+#endif
 
 #ifdef ADD_CHECKS
 ENTRY (__memmove_chk_erms)
@@ -271,8 +275,10 @@ L(movsb_backward):
 	cld
 	ret
 END (__memmove_erms)
-//strong_alias (__memmove_erms, __memcpy_erms)
-//strong_alias (__memmove_chk_erms, __memcpy_chk_erms)
+#ifdef USE_MEMPCPY
+strong_alias (__memmove_erms, __memcpy_erms)
+strong_alias (__memmove_chk_erms, __memcpy_chk_erms)
+#endif
 # endif
 
 # ifdef SHARED
@@ -283,13 +289,13 @@ ENTRY (MEMMOVE_CHK_SYMBOL (__mempcpy_chk, unaligned_erms))
 END (MEMMOVE_CHK_SYMBOL (__mempcpy_chk, unaligned_erms))
 # endif
 # endif
-
+#ifdef USE_MEMPCPY
 ENTRY (MEMMOVE_SYMBOL (__mempcpy, unaligned_erms))
 	mov	%RDI_LP, %RAX_LP
 	add	%RDX_LP, %RAX_LP
 	jmp	L(start_erms)
 END (MEMMOVE_SYMBOL (__mempcpy, unaligned_erms))
-
+#endif
 # ifdef SHARED
 # ifdef ADD_CHECKS
 ENTRY (MEMMOVE_CHK_SYMBOL (__memmove_chk, unaligned_erms))
