@@ -72,6 +72,7 @@
 #endif
 
 	.section SECTION(.text),"ax",@progbits
+#ifdef ADD_BZERO
 #if VEC_SIZE == 16 && IS_IN (libc)
 ENTRY (__bzero)
 	mov	%RDI_LP, %RAX_LP /* Set return value.  */
@@ -80,6 +81,7 @@ ENTRY (__bzero)
 	jmp	L(entry_from_bzero)
 END (__bzero)
 weak_alias (__bzero, bzero)
+#endif
 #endif
 
 #if IS_IN (libc)

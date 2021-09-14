@@ -57,9 +57,3 @@
 #include "multiarch/memset-vec-unaligned-erms.S"
 
 libc_hidden_builtin_def (memset)
-
-#if IS_IN (libc)
-libc_hidden_def (__wmemset)
-weak_alias (__wmemset, wmemset)
-libc_hidden_weak (wmemset)
-#endif
