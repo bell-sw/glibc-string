@@ -42,6 +42,8 @@ The library installed size: ~220K.
 
 * `strchr`: avx2, avx2_rtm, evex, sse2, sse2_no_bsf
 
+* `strchrnul`: avx2_rtm, avx2, evex, sse2
+
 * `strrchr`: avx2, avx2_rtm, evex, sse2
 
 * `strcmp`: avx2, avx2_rtm, evex, sse2, sse2_unaligned, sse42, ssse3
