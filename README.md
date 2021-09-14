@@ -11,7 +11,7 @@ LD_PRELOAD=libglibc-string.so myprogram
 
 Or linked to a program directly, either statically or dynamically.
 
-The library installed size: ~220K.
+The library installed size: ~244K.
 
 * `memchr`: avx2, avx2_rtm, evex, evex_rtm, sse2
 
