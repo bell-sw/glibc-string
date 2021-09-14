@@ -16,8 +16,6 @@
    <https://www.gnu.org/licenses/>.  */
 
 
-//#include <ldsodefs.h>
-
 #ifdef SHARED
 # include <cpu-features.c>
 
@@ -27,9 +25,6 @@
    is used to call init_cpu_features.  In static executable, it is called
    once by IFUNC relocation.  In dynamic executable, it is called twice
    by DL_PLATFORM_INIT and by IFUNC relocation.  */
-//extern void __x86_cpu_features (void) attribute_hidden;
-//void (*const __x86_cpu_features_p) (void) attribute_hidden
-//  = __x86_cpu_features;
 
 static void
 _dl_x86_init_cpu_features (void)
@@ -41,6 +36,7 @@ _dl_x86_init_cpu_features (void)
 
 #endif
 
+attribute_hidden
 const struct cpu_features *
 __get_cpu_features (void)
 {
