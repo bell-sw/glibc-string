@@ -37,9 +37,7 @@
 #include <sysdeps/x86/sysdep.h>
 
 static uint64_t _dl_hwcap __attribute__ ((nocommon));
-static uint64_t _dl_hwcap2 __attribute__ ((nocommon));
 static const char *_dl_platform;
-static size_t _dl_platformlen;
 static uint64_t _dl_hwcap_mask __attribute__ ((nocommon));
 
 static void

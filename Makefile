@@ -9,7 +9,13 @@ OBJ_DIR  := obj
 CC := gcc
 LD := gcc
 AR := ar
-CFLAGS := -g -O2 -fPIC -DSHARED -U_FORTIFY_SOURCE -Wa,--noexecstack $(CFLAGS)
+
+CFLAGS := -Wall -Werror -g -O2 -fPIC \
+	-ffreestanding -fno-builtin -fno-tree-loop-distribute-patterns \
+	-fno-unwind-tables -fno-asynchronous-unwind-tables \
+	-ffunction-sections -fdata-sections \
+	-std=gnu99 -DSHARED -U_FORTIFY_SOURCE \
+	-Wa,--noexecstack $(CFLAGS)
 
 CPU_FEATURES_INC := -I. -I./elf -I./include -I./sysdeps/x86 -I./sysdeps/x86/include
 CPU_FEATURES_SRC := sysdeps/x86/dl-get-cpu-features.c
