@@ -9,7 +9,7 @@ OBJ_DIR  := obj
 CC := gcc
 LD := gcc
 AR := ar
-CFLAGS := -g -O2 -fPIC -DSHARED -U_FORTIFY_SOURCE $(CFLAGS)
+CFLAGS := -g -O2 -fPIC -DSHARED -U_FORTIFY_SOURCE -Wa,--noexecstack $(CFLAGS)
 
 CPU_FEATURES_INC := -I. -I./elf -I./include -I./sysdeps/x86 -I./sysdeps/x86/include
 CPU_FEATURES_SRC := sysdeps/x86/dl-get-cpu-features.c
