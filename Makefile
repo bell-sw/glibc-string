@@ -51,8 +51,13 @@ $(OBJ_DIR)/multiarch/%.o: $(STR_DIR)/%.c
 
 $(LIB_NAME): $(CPU_FEATURES_OBJ) $(STR_OBJS)
 	@mkdir -p $(LIB_DIR)
-	@rm -f $(LIB_DIR)/$(LIB_NAME).*
+	@rm -f $(LIB_DIR)/$(LIB_NAME).a
 	$(AR) rc $(LIB_DIR)/$(LIB_NAME).a $(CPU_FEATURES_OBJ) $(STR_OBJS)
+
+shared: $(CPU_FEATURES_OBJ) $(STR_OBJS)
+	@mkdir -p $(LIB_DIR)
+	@rm -f $(LIB_DIR)/$(LIB_NAME).so
+	$(CC) $(CFLAGS) $(LDFLAGS) -shared -o $(LIB_DIR)/$(LIB_NAME).so $(CPU_FEATURES_OBJ) $(STR_OBJS)
 
 .PHONY: all clean
 
