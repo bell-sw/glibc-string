@@ -2,7 +2,6 @@
 # Copyright (c) 2021, BELLSOFT. All rights reserved.
 
 LIB_NAME := libglibc-string
-SRC_DIR  := .
 LIB_DIR  := lib
 OBJ_DIR  := obj
 
