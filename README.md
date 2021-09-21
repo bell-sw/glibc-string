@@ -1,17 +1,8 @@
-# Collection of glibc-string asm implementations
+# Collection of glibc optimized asm string implementations
 
 This is a small part of the glibc that only includes cpu features detection,
-GNU indirect functions that select the appropriate implementation,
-and optimized asm string versions.
-
-It can be used in programs without any code changes:
-```sh
-LD_PRELOAD=libglibc-string.so myprogram
-```
-
-Or linked to a program directly, either statically or dynamically.
-
-The library installed size: ~248K.
+GNU indirect functions that select an appropriate implementation,
+and the following optimized asm string versions:
 
 * `memchr`: avx2, avx2_rtm, evex, evex_rtm, sse2
 
@@ -59,3 +50,12 @@ The library installed size: ~248K.
 * `strncpy`: avx2, avx2_rtm, evex, sse2 (C impl), sse2_unaligned, ssse3
 
 * `wcslen`: avx2, avx2_rtm, evex, sse2
+
+It can be used in programs without any code changes:
+```sh
+LD_PRELOAD=libglibc-string.so myprogram
+```
+
+Or linked to a program directly, either statically or dynamically.
+
+The library size: ~248K.
