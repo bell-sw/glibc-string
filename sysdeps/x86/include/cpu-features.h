@@ -47,11 +47,11 @@ enum
 
 /* Only used directly in cpu-features.c.  */
 #define CPU_FEATURE_SET(ptr, name) \
-  ptr->features[index_cpu_##name].usable.reg_##name |= bit_cpu_##name;
+  ptr->features[index_cpu_##name].active.reg_##name |= bit_cpu_##name;
 #define CPU_FEATURE_UNSET(ptr, name) \
-  ptr->features[index_cpu_##name].usable.reg_##name &= ~bit_cpu_##name;
-#define CPU_FEATURE_SET_USABLE(ptr, name) \
-  ptr->features[index_cpu_##name].usable.reg_##name \
+  ptr->features[index_cpu_##name].active.reg_##name &= ~bit_cpu_##name;
+#define CPU_FEATURE_SET_ACTIVE(ptr, name) \
+  ptr->features[index_cpu_##name].active.reg_##name \
      |= ptr->features[index_cpu_##name].cpuid.reg_##name & bit_cpu_##name;
 #define CPU_FEATURE_PREFERRED_P(ptr, name) \
   ((ptr->preferred[index_arch_##name] & bit_arch_##name) != 0)
@@ -59,10 +59,14 @@ enum
 #define CPU_FEATURE_CHECK_P(ptr, name, check) \
   ((ptr->features[index_cpu_##name].check.reg_##name \
     & bit_cpu_##name) != 0)
-#define CPU_FEATURE_CPU_P(ptr, name) \
+#define CPU_FEATURE_PRESENT_P(ptr, name) \
   CPU_FEATURE_CHECK_P (ptr, name, cpuid)
+#define CPU_FEATURE_ACTIVE_P(ptr, name) \
+  CPU_FEATURE_CHECK_P (ptr, name, active)
+#define CPU_FEATURE_CPU_P(ptr, name) \
+  CPU_FEATURE_PRESENT_P (ptr, name)
 #define CPU_FEATURE_USABLE_P(ptr, name) \
-  CPU_FEATURE_CHECK_P (ptr, name, usable)
+  CPU_FEATURE_ACTIVE_P (ptr, name)
 
 /* HAS_CPU_FEATURE evaluates to true if CPU supports the feature.  */
 #define HAS_CPU_FEATURE(name) \
@@ -233,7 +237,7 @@ enum
 #define bit_cpu_AVX512_VP2INTERSECT (1u << 8)
 #define bit_cpu_INDEX_7_EDX_9	(1u << 9)
 #define bit_cpu_MD_CLEAR	(1u << 10)
-#define bit_cpu_INDEX_7_EDX_11	(1u << 11)
+#define bit_cpu_RTM_ALWAYS_ABORT (1u << 11)
 #define bit_cpu_INDEX_7_EDX_12	(1u << 12)
 #define bit_cpu_INDEX_7_EDX_13	(1u << 13)
 #define bit_cpu_SERIALIZE	(1u << 14)
@@ -293,6 +297,11 @@ enum
 
 /* EBX.  */
 #define bit_cpu_WBNOINVD	(1u << 9)
+#define bit_cpu_AMD_IBPB	(1u << 12)
+#define bit_cpu_AMD_IBRS	(1u << 14)
+#define bit_cpu_AMD_STIBP	(1u << 15)
+#define bit_cpu_AMD_SSBD	(1u << 24)
+#define bit_cpu_AMD_VIRT_SSBD	(1u << 25)
 
 /* CPUID_INDEX_7_ECX_1.  */
 
@@ -463,7 +472,7 @@ enum
 #define index_cpu_AVX512_VP2INTERSECT CPUID_INDEX_7
 #define index_cpu_INDEX_7_EDX_9	CPUID_INDEX_7
 #define index_cpu_MD_CLEAR	CPUID_INDEX_7
-#define index_cpu_INDEX_7_EDX_11 CPUID_INDEX_7
+#define index_cpu_RTM_ALWAYS_ABORT CPUID_INDEX_7
 #define index_cpu_INDEX_7_EDX_12 CPUID_INDEX_7
 #define index_cpu_INDEX_7_EDX_13 CPUID_INDEX_7
 #define index_cpu_SERIALIZE	CPUID_INDEX_7
@@ -523,6 +532,11 @@ enum
 
 /* EBX.  */
 #define index_cpu_WBNOINVD	CPUID_INDEX_80000008
+#define index_cpu_AMD_IBPB	CPUID_INDEX_80000008
+#define index_cpu_AMD_IBRS	CPUID_INDEX_80000008
+#define index_cpu_AMD_STIBP	CPUID_INDEX_80000008
+#define index_cpu_AMD_SSBD	CPUID_INDEX_80000008
+#define index_cpu_AMD_VIRT_SSBD	CPUID_INDEX_80000008
 
 /* CPUID_INDEX_7_ECX_1.  */
 
@@ -693,7 +707,7 @@ enum
 #define reg_AVX512_VP2INTERSECT	edx
 #define reg_INDEX_7_EDX_9	edx
 #define reg_MD_CLEAR		edx
-#define reg_INDEX_7_EDX_11	edx
+#define reg_RTM_ALWAYS_ABORT	edx
 #define reg_INDEX_7_EDX_12	edx
 #define reg_INDEX_7_EDX_13	edx
 #define reg_SERIALIZE		edx
@@ -753,6 +767,11 @@ enum
 
 /* EBX.  */
 #define reg_WBNOINVD		ebx
+#define reg_AMD_IBPB		ebx
+#define reg_AMD_IBRS		ebx
+#define reg_AMD_STIBP		ebx
+#define reg_AMD_SSBD		ebx
+#define reg_AMD_VIRT_SSBD	ebx
 
 /* CPUID_INDEX_7_ECX_1.  */
 
@@ -838,8 +857,8 @@ struct cpuid_feature_internal
     };
   union
     {
-      unsigned int usable_array[4];
-      struct cpuid_registers usable;
+      unsigned int active_array[4];
+      struct cpuid_registers active;
     };
 };
 
@@ -909,13 +928,15 @@ extern const struct cpu_features *__get_cpu_features (void)
      __attribute__ ((pure));
 
 /*
+#define __get_cpu_features() _dl_x86_get_cpu_features()
+
 #if defined (_LIBC) && !IS_IN (nonlib)
 */
 /* Unused for x86.  */
 # define INIT_ARCH()
 /*
 # define _dl_x86_get_cpu_features() (&GLRO(dl_x86_cpu_features))
-extern void _dl_x86_init_cpu_features (void);
+extern void _dl_x86_init_cpu_features (void) attribute_hidden;
 #endif
 */
 

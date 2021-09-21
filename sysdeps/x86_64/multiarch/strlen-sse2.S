@@ -16,14 +16,6 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include "glibc-cmp.h"
+#define strlen __strlen_sse2
 
-#if IS_IN (libc)
-
-#undef libc_hidden_builtin_def
-#define libc_hidden_builtin_def(strlen)
-
-# define strlen __strlen_sse2
-#endif
-
-#include "../strlen.S"
+#include "strlen-vec.S"

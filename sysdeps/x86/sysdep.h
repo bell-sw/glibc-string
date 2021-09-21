@@ -39,7 +39,7 @@ enum cf_protection_level
 #define X86_FEATURE_1_SHSTK	(1U << 1)
 
 /* #ifdef __CET__ */
-#ifdef __CET__NOUSED
+#ifdef __CET__NOT_USED
 # define CET_ENABLED	1
 # define IBT_ENABLED	(__CET__ & X86_FEATURE_1_IBT)
 # define SHSTK_ENABLED	(__CET__ & X86_FEATURE_1_SHSTK)
@@ -57,6 +57,11 @@ enum cf_protection_level
 /* Save SSE, AVX, AVX512, mask and bound registers.  */
 #define STATE_SAVE_MASK \
   ((1 << 1) | (1 << 2) | (1 << 3) | (1 << 5) | (1 << 6) | (1 << 7))
+
+/* Constants for bits in __x86_string_control:  */
+
+/* Avoid short distance REP MOVSB.  */
+#define X86_STRING_CONTROL_AVOID_SHORT_DISTANCE_REP_MOVSB	(1 << 0)
 
 #ifdef	__ASSEMBLER__
 

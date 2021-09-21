@@ -8,7 +8,7 @@
 /* This must be one higer than the last used LC_xxx category value.  */
 //#define __LC_LAST	13
 
-#define RELEASE "development"
-#define VERSION "2.33.9000"
+#define RELEASE "stable"
+#define VERSION "2.34"
 
 #endif

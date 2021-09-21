@@ -68,7 +68,7 @@
    compiled as part of the C library.  We must define this before including
    config.h, because it makes some definitions conditional on whether libc
    itself is being compiled, or just some generator program.  */
-//#define _LIBC	1
+/*#define _LIBC	1*/
 
 /* Some files must be compiled with optimization on.  */
 #if !defined __ASSEMBLER__ && !defined __OPTIMIZE__
@@ -796,29 +796,6 @@ for linking")
 # define libdl_hidden_tls_def(name)
 # define libdl_hidden_data_weak(name)
 # define libdl_hidden_data_ver(local, name)
-#endif
-
-#if IS_IN (libnss_files)
-# define libnss_files_hidden_proto(name, attrs...) hidden_proto (name, ##attrs)
-# define libnss_files_hidden_tls_proto(name, attrs...) \
-  hidden_tls_proto (name, ##attrs)
-# define libnss_files_hidden_def(name) hidden_def (name)
-# define libnss_files_hidden_weak(name) hidden_weak (name)
-# define libnss_files_hidden_ver(local, name) hidden_ver (local, name)
-# define libnss_files_hidden_data_def(name) hidden_data_def (name)
-# define libnss_files_hidden_tls_def(name) hidden_tls_def (name)
-# define libnss_files_hidden_data_weak(name) hidden_data_weak (name)
-# define libnss_files_hidden_data_ver(local, name) hidden_data_ver(local, name)
-#else
-# define libnss_files_hidden_proto(name, attrs...)
-# define libnss_files_hidden_tls_proto(name, attrs...)
-# define libnss_files_hidden_def(name)
-# define libnss_files_hidden_weak(name)
-# define libnss_files_hidden_ver(local, name)
-# define libnss_files_hidden_data_def(name)
-# define libnss_files_hidden_tls_def(name)
-# define libnss_files_hidden_data_weak(name)
-# define libnss_files_hidden_data_ver(local, name)
 #endif
 
 #if IS_IN (libnsl)

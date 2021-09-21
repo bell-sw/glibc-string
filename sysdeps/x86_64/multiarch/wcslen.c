@@ -26,7 +26,7 @@
 # undef wcslen
 
 # define SYMBOL_NAME wcslen
-# include "ifunc-avx2.h"
+# include "ifunc-wcslen.h"
 
 libc_ifunc_redirected (__redirect_wcslen, wcslen, IFUNC_SELECTOR ());
 #endif
