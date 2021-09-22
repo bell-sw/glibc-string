@@ -55,7 +55,7 @@ long int __x86_rep_movsb_stop_threshold attribute_hidden;
 /* A bit-wise OR of string/memory requirements for optimal performance
    e.g. X86_STRING_CONTROL_AVOID_SHORT_DISTANCE_REP_MOVSB.  These bits
    are used at runtime to tune implementation behavior.  */
-int __x86_string_control attribute_hidden = 0;
+int __x86_string_control attribute_hidden;
 
 static void
 init_cacheinfo (void)
