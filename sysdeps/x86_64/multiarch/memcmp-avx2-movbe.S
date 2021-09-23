@@ -16,7 +16,7 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include <glibc-cmp.h>
+#include "glibc-cmp.h"
 
 #if IS_IN (libc)
 
@@ -38,7 +38,7 @@
    8. Use 4 vector compares when size is 4 * VEC_SIZE or less.
    9. Use 8 vector compares when size is 8 * VEC_SIZE or less.  */
 
-# include <sysdeps/x86_64/sysdep.h>
+# include <sysdep.h>
 
 # ifndef MEMCMP
 #  define MEMCMP	__memcmp_avx2_movbe

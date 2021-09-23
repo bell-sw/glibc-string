@@ -18,7 +18,7 @@
 
 #include "glibc-cmp.h"
 
-#include <sysdeps/x86_64/sysdep.h>
+#include <sysdep.h>
 
 #define STRCMP __strncmp_ssse3
 

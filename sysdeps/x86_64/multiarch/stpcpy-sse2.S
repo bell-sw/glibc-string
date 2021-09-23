@@ -20,7 +20,7 @@
 
 #if IS_IN (libc)
 
-# include <sysdeps/x86_64/sysdep.h>
+# include <sysdep.h>
 # define __stpcpy __stpcpy_sse2
 
 # undef weak_alias

@@ -46,7 +46,7 @@
       and destination do page alias copy from 4 pages at once using
       non-temporal stores.  */
 
-#include <sysdeps/x86_64/sysdep.h>
+#include <sysdep.h>
 
 #ifndef MEMCPY_SYMBOL
 # define MEMCPY_SYMBOL(p,s)		MEMMOVE_SYMBOL(p, s)

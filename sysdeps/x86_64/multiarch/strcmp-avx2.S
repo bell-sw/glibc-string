@@ -20,7 +20,7 @@
 
 #if IS_IN (libc)
 
-# include <sysdeps/x86_64/sysdep.h>
+# include <sysdep.h>
 
 # ifndef STRCMP
 #  define STRCMP	__strcmp_avx2

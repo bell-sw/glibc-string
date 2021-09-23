@@ -21,7 +21,7 @@
 #if IS_IN (libc)
 
 # ifndef USE_AS_STRCAT
-#  include <sysdeps/x86_64/sysdep.h>
+#  include <sysdep.h>
 
 #  ifndef STRCPY
 #   define STRCPY  __strcpy_evex

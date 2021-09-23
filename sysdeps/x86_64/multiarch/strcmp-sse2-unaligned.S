@@ -20,7 +20,7 @@
 
 #if IS_IN (libc)
 
-#include <sysdeps/x86_64/sysdep.h>
+#include <sysdep.h>
 
 ENTRY ( __strcmp_sse2_unaligned)
 	movl	%edi, %eax

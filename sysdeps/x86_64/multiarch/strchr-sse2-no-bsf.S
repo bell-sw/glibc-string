@@ -21,7 +21,7 @@
 
 #if IS_IN (libc)
 
-# include <sysdeps/x86_64/sysdep.h>
+# include <sysdep.h>
 # include "asm-syntax.h"
 
 	atom_text_section

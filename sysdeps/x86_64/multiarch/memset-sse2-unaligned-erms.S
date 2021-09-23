@@ -19,7 +19,7 @@
 
 #include "glibc-cmp.h"
 
-#include <sysdeps/x86_64/sysdep.h>
+#include <sysdep.h>
 
 #if IS_IN (libc)
 # define MEMSET_SYMBOL(p,s)	p##_sse2_##s

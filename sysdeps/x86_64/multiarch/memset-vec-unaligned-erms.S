@@ -24,7 +24,7 @@
    5. If size is more to 4 * VEC_SIZE, align to 4 * VEC_SIZE with
       4 VEC stores and store 4 * VEC at a time until done.  */
 
-#include <sysdeps/x86_64/sysdep.h>
+#include <sysdep.h>
 
 #ifdef ADD_CHECKS
 #ifndef MEMSET_CHK_SYMBOL

@@ -17,11 +17,11 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include <glibc-cmp.h>
+#include "glibc-cmp.h"
 
 #if IS_IN (libc)
 
-# include <sysdeps/x86_64/sysdep.h>
+# include <sysdep.h>
 
 # ifndef MEMCMP
 #  define MEMCMP	__memcmp_ssse3

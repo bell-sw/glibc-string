@@ -20,7 +20,7 @@
 
 #if IS_IN (libc)
 
-# include <sysdeps/x86_64/sysdep.h>
+# include <sysdep.h>
 
 # ifndef STRCHR
 #  define STRCHR	__strchr_avx2

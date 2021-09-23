@@ -19,7 +19,7 @@
 
 /* Define multiple versions only for the definition in libc.  */
 
-#include <glibc-cmp.h>
+#include "glibc-cmp.h"
 
 #if IS_IN (libc)
 # define memcmp __redirect_memcmp

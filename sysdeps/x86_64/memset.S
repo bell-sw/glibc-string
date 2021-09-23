@@ -17,7 +17,7 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include <sysdeps/x86_64/sysdep.h>
+#include <sysdep.h>
 
 #define VEC_SIZE	16
 #define VEC(i)		xmm##i

@@ -20,7 +20,12 @@ CPU_FEATURES_INC := -I. -I./elf -I./include -I./sysdeps/x86 -I./sysdeps/x86/incl
 CPU_FEATURES_SRC := sysdeps/x86/dl-get-cpu-features.c
 CPU_FEATURES_OBJ := $(OBJ_DIR)/dl-get-cpu-features.o
 
-STR_INC := -I. -I./elf -I./include -I./sysdeps/x86 -I./sysdeps/x86/include -I./sysdeps/x86_64 -I./sysdeps/x86_64/multiarch
+STR_INC := -I. -I./elf -I./include \
+	-I./sysdeps/x86_64/multiarch \
+	-I./sysdeps/x86_64 \
+	-I./sysdeps/x86/include \
+	-I./sysdeps/x86
+
 STR_DIR   := sysdeps/x86_64/multiarch
 
 SKIP := $(STR_DIR)/memmove-vec-unaligned-erms.S \

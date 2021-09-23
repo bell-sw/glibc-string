@@ -17,7 +17,7 @@
    <https://www.gnu.org/licenses/>.  */
 
 
-#include <sysdeps/x86_64/sysdep.h>
+#include <sysdep.h>
 
 	.text
 ENTRY (strrchr)

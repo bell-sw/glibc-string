@@ -18,7 +18,7 @@
 
 #include "glibc-cmp.h"
 
-#include <sysdeps/x86_64/sysdep.h>
+#include <sysdep.h>
 
 #if IS_IN (libc)
 # define STRCMP __strncmp_sse2
