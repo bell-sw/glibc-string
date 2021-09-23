@@ -38,8 +38,7 @@ enum cf_protection_level
 /* Set if CF_RETURN (SHSTK) is enabled.  */
 #define X86_FEATURE_1_SHSTK	(1U << 1)
 
-/* #ifdef __CET__ */
-#ifdef __CET__NOT_USED
+#ifdef __CET__
 # define CET_ENABLED	1
 # define IBT_ENABLED	(__CET__ & X86_FEATURE_1_IBT)
 # define SHSTK_ENABLED	(__CET__ & X86_FEATURE_1_SHSTK)

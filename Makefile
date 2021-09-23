@@ -14,6 +14,7 @@ CFLAGS := -Wall -Werror -g -O2 -fPIC \
 	-fno-unwind-tables -fno-asynchronous-unwind-tables \
 	-ffunction-sections -fdata-sections \
 	-std=gnu99 -DSHARED -U_FORTIFY_SOURCE \
+	-fcf-protection=none \
 	-Wa,--noexecstack $(CFLAGS)
 
 CPU_FEATURES_INC := -I. -I./elf -I./include -I./sysdeps/x86 -I./sysdeps/x86/include
