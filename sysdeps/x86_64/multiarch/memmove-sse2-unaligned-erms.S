@@ -16,8 +16,6 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include "glibc-cmp.h"
-
 #if IS_IN (libc)
 # define MEMMOVE_SYMBOL(p,s)	p##_sse2_##s
 #else

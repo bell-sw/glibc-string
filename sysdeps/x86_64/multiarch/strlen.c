@@ -17,8 +17,6 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include "glibc-cmp.h"
-
 /* Define multiple versions only for the definition in libc.  */
 #if IS_IN (libc)
 # define strlen __redirect_strlen

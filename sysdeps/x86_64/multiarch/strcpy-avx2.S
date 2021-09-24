@@ -17,8 +17,6 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include "glibc-cmp.h"
-
 #if IS_IN (libc)
 
 # ifndef USE_AS_STRCAT

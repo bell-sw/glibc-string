@@ -26,7 +26,8 @@ STR_INC := -I. -I./elf -I./include \
 	-I./sysdeps/x86_64 \
 	-I./sysdeps/x86/include \
 	-I./sysdeps/x86 \
-	-I./sysdeps/generic
+	-I./sysdeps/generic \
+	-include glibc-cmp.h
 
 STR_DIR   := sysdeps/x86_64/multiarch
 

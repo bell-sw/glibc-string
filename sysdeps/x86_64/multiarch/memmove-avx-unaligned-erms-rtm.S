@@ -1,5 +1,3 @@
-#include "glibc-cmp.h"
-
 #if IS_IN (libc)
 # define VEC_SIZE	32
 # define VEC(i)		ymm##i

@@ -1,5 +1,3 @@
-#include "glibc-cmp.h"
-
 # ifdef SHARED
 #  undef libc_hidden_builtin_def
 #  define libc_hidden_builtin_def(name)

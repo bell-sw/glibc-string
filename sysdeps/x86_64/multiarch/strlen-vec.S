@@ -16,8 +16,6 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include "glibc-cmp.h"
-
 #include <sysdep.h>
 
 #ifdef AS_WCSLEN
