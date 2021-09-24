@@ -36,8 +36,6 @@
 
 # undef strong_alias
 # define strong_alias(ignored1, ignored2)
-
 #endif
-
 
 #include <sysdeps/x86_64/memset.S>
