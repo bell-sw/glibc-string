@@ -16,6 +16,8 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
+#include <stdbool.h>
+
 #ifndef _SC_LEVEL1_ICACHE_SIZE
 enum {
     _SC_LEVEL1_ICACHE_SIZE = _SC_TRACE_LOG + 1,
