@@ -85,7 +85,7 @@
 #include <config.h>
 
 /* Obtain the definition of symbol_version_reference.  */
-#include <sysdeps/generic/libc-symver.h>
+#include <libc-symver.h>
 
 /* When PIC is defined and SHARED isn't defined, we are building PIE
    by default.  */
@@ -862,7 +862,7 @@ for linking")
 #endif
 
 /* Get some dirty hacks.  */
-#include <sysdeps/generic/symbol-hacks.h>
+#include <symbol-hacks.h>
 
 /* Move compatibility symbols out of the way by placing them all in a
    special section.  */
