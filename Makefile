@@ -17,7 +17,10 @@ CFLAGS := -Wall -Werror -g -O2 -fPIC \
 	-fcf-protection=none \
 	-Wa,--noexecstack $(CFLAGS)
 
-CPU_FEATURES_INC := -I. -I./elf -I./include -I./sysdeps/x86 -I./sysdeps/x86/include -I./sysdeps/generic
+CPU_FEATURES_INC := -I. -I./elf -I./include -I./sysdeps/x86 \
+	-I./sysdeps/x86/include -I./sysdeps/generic \
+	-include stdbool.h -include sc_level_values.h
+
 CPU_FEATURES_SRC := sysdeps/x86/dl-get-cpu-features.c
 CPU_FEATURES_OBJ := $(OBJ_DIR)/dl-get-cpu-features.o
 

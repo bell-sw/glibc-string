@@ -3,7 +3,7 @@
  * Copyright (c) 2021, BELLSOFT. All rights reserved.
  *
  * This file provides compatibility macros for building
- * string functions without additiona glibc includes.
+ * string functions without additional glibc includes.
  */
 
 #ifndef _GLIBC_CMP_H
