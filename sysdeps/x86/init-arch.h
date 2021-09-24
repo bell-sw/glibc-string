@@ -16,7 +16,7 @@
    <https://www.gnu.org/licenses/>.  */
 
 #include <ldsodefs.h>
-#include <sysdeps/generic/ifunc-init.h>
+#include <ifunc-init.h>
 #include <isa.h>
 
 #ifndef __x86_64__
