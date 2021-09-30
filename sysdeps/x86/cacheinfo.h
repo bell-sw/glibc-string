@@ -20,15 +20,13 @@
 #include <unistd.h>
 #include <cpuid.h>
 #include <cpu-features.h>
+#include <sysdep.h>
 
 #if HAVE_TUNABLES
 # define TUNABLE_NAMESPACE cpu
 # include <unistd.h>		/* Get STDOUT_FILENO for _dl_printf.  */
 # include <elf/dl-tunables.h>
 #endif
-
-#include "glibc-cmp.h"
-#include "sysdep.h"
 
 #if IS_IN (libc)
 /* Data cache size for use in memory and string routines, typically

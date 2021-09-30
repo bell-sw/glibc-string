@@ -16,8 +16,6 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include "glibc-cmp.h"
-
 #ifndef PROCINFO_CLASS
 # define PROCINFO_CLASS static
 #endif
@@ -32,7 +30,7 @@
 #include <cacheinfo.h>
 #include <dl-cacheinfo.h>
 
-#include <sysdeps/x86/sysdep.h>
+#include <sysdep.h>
 
 static uint64_t _dl_hwcap __attribute__ ((nocommon));
 static const char *_dl_platform;

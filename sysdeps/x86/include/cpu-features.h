@@ -19,10 +19,6 @@
 #ifndef	_PRIVATE_CPU_FEATURES_H
 #define	_PRIVATE_CPU_FEATURES_H	1
 
-#ifndef GLRO
-# define GLRO(name) _##name
-#endif
-
 #ifdef _CPU_FEATURES_H
 # error this should be impossible
 #endif

@@ -19,7 +19,7 @@ CFLAGS := -Wall -Werror -g -O2 -fPIC \
 
 CPU_FEATURES_INC := -I. -I./compat -I./elf -I./include \
 	-I./sysdeps/x86 -I./sysdeps/x86/include -I./sysdeps/generic \
-	-include stdbool.h -include sc_level_values.h
+	-include stdbool.h -include sc_level_values.h -include glibc-cmp.h
 
 CPU_FEATURES_SRC := sysdeps/x86/dl-get-cpu-features.c
 CPU_FEATURES_OBJ := $(OBJ_DIR)/dl-get-cpu-features.o
