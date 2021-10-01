@@ -17,6 +17,7 @@ CFLAGS := -Wall -Werror -g -O2 -fPIC \
 	-fcf-protection=none \
 	-Wa,--noexecstack \
 	-DHAVE_GCC_IFUNC \
+	-DHAVE_CC_NO_STACK_PROTECTOR -DPIC \
 	$(CFLAGS)
 
 CPU_FEATURES_INC := -I. -I./compat -I./elf -I./include \
