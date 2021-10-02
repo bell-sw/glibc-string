@@ -998,7 +998,9 @@ for linking")
 #define libc_ifunc(name, expr) __ifunc (name, name, expr, void, INIT_ARCH)
 
 #define libc_ifunc_redirected(redirected_name, name, expr)	\
-  __ifunc (redirected_name, name, expr, void, INIT_ARCH)
+  __ifunc (redirected_name, __##name, expr, void, INIT_ARCH); \
+  weak_alias (__##name, name); \
+  extern __typeof(__##name) __##name attribute_hidden
 
 #define libc_ifunc_hidden(redirected_name, name, expr)			\
   __ifunc_hidden (redirected_name, name, expr, void, INIT_ARCH)

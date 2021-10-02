@@ -15,6 +15,8 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
+#define strnlen __strnlen
+#define memset __memset
 #include <string.h>
 
 #undef strncpy
@@ -26,9 +28,9 @@
 char *
 STRNCPY (char *s1, const char *s2, size_t n)
 {
-  size_t size = strnlen (s2, n);
+  size_t size = __strnlen (s2, n);
   if (size != n)
-    memset (s1 + size, '\0', n - size);
+    __memset (s1 + size, '\0', n - size);
   return memcpy (s1, s2, size);
 }
 libc_hidden_builtin_def (strncpy)

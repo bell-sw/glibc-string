@@ -15,6 +15,8 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
+#define strnlen __strnlen
+#define memset __memset
 #include <string.h>
 
 #ifndef STPNCPY
@@ -31,10 +33,10 @@ weak_alias (__stpncpy, stpncpy)
 char *
 STPNCPY (char *dest, const char *src, size_t n)
 {
-  size_t size = strnlen (src, n);
+  size_t size = __strnlen (src, n);
   memcpy (dest, src, size);
   dest += size;
   if (size == n)
     return dest;
-  return memset (dest, '\0', n - size);
+  return __memset (dest, '\0', n - size);
 }

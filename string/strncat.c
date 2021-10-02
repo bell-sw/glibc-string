@@ -15,6 +15,8 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
+#define strnlen __strnlen
+#define strlen __strlen
 #include <string.h>
 
 #ifndef STRNCAT
@@ -29,9 +31,9 @@ STRNCAT (char *s1, const char *s2, size_t n)
   char *s = s1;
 
   /* Find the end of S1.  */
-  s1 += strlen (s1);
+  s1 += __strlen (s1);
 
-  size_t ss = strnlen (s2, n);
+  size_t ss = __strnlen (s2, n);
 
   s1[ss] = '\0';
   memcpy (s1, s2, ss);
