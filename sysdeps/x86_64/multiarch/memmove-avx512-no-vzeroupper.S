@@ -418,4 +418,9 @@ L(gobble_256bytes_nt_loop_bkw):
 	vmovups	%zmm5, -0x40(%r8)
 	jmp	L(check)
 END (__memmove_avx512_no_vzeroupper)
+
+strong_alias (__memmove_avx512_no_vzeroupper, __memcpy_avx512_no_vzeroupper)
+# ifdef ADD_CHECKS
+strong_alias (__memmove_chk_avx512_no_vzeroupper, __memcpy_chk_avx512_no_vzeroupper)
+# endif
 #endif

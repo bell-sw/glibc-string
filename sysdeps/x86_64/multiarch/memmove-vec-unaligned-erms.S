@@ -275,10 +275,10 @@ L(movsb_backward):
 	cld
 	ret
 END (__memmove_erms)
-#ifdef USE_MEMPCPY
 strong_alias (__memmove_erms, __memcpy_erms)
+#  ifdef ADD_CHECKS
 strong_alias (__memmove_chk_erms, __memcpy_chk_erms)
-#endif
+#  endif
 # endif
 
 # ifdef SHARED
@@ -782,3 +782,25 @@ L(large_memcpy_4x_end):
 	VZEROUPPER_RETURN
 #endif
 END (MEMMOVE_SYMBOL (__memmove, unaligned_erms))
+
+#if IS_IN (libc)
+# ifdef USE_MULTIARCH
+strong_alias (MEMMOVE_SYMBOL (__memmove, unaligned_erms),
+	      MEMMOVE_SYMBOL (__memcpy, unaligned_erms))
+#  ifdef ADD_CHECKS
+#  ifdef SHARED
+strong_alias (MEMMOVE_SYMBOL (__memmove_chk, unaligned_erms),
+	      MEMMOVE_SYMBOL (__memcpy_chk, unaligned_erms))
+#  endif
+#  endif
+# endif
+
+# ifdef ADD_CHECKS
+# ifdef SHARED
+strong_alias (MEMMOVE_CHK_SYMBOL (__memmove_chk, unaligned),
+	      MEMMOVE_CHK_SYMBOL (__memcpy_chk, unaligned))
+# endif
+# endif
+#endif
+strong_alias (MEMMOVE_SYMBOL (__memmove, unaligned),
+	      MEMCPY_SYMBOL (__memcpy, unaligned))

@@ -40,8 +40,6 @@ STR_DIR   := sysdeps/x86_64/multiarch
 SKIP := $(STR_DIR)/memmove-vec-unaligned-erms.S \
 	$(STR_DIR)/memset-vec-unaligned-erms.S \
 	$(STR_DIR)/strcmp-sse42.S \
-	$(STR_DIR)/memcpy-ssse3-back.S \
-	$(STR_DIR)/memcpy-ssse3.S \
 	$(STR_DIR)/strlen-vec.S
 
 STR_SRC_A := $(filter-out $(SKIP), $(wildcard $(STR_DIR)/*.S))

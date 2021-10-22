@@ -18,6 +18,11 @@ and the following optimized asm string versions:
 * `wmemset`: avx2_unaligned, avx2_unaligned_rtm, avx512_unaligned, evex_unaligned
   sse2_unaligned
 
+* `memcpy`: avx512_no_vzeroupper, avx512_unaligned, avx512_unaligned_erms,
+  avx_unaligned, avx_unaligned_erms, avx_unaligned_erms_rtm,
+  avx_unaligned_rtm, erms, evex_unaligned, evex_unaligned_erms,
+  sse2_unaligned, sse2_unaligned_erms, ssse3, ssse3_back
+
 * `memmove`: avx512_no_vzeroupper, avx512_unaligned, avx512_unaligned_erms,
   avx_unaligned, avx_unaligned_erms, avx_unaligned_erms_rtm,
   avx_unaligned_rtm, erms, evex_unaligned, evex_unaligned_erms,
@@ -58,4 +63,4 @@ LD_PRELOAD=libglibc-string.so myprogram
 
 Or linked to a program directly, either statically or dynamically.
 
-The library size: ~248K.
+The library size: ~268K.
