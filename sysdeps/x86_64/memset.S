@@ -35,6 +35,9 @@
   punpcklwd %xmm0, %xmm0; \
   pshufd $0, %xmm0, %xmm0
 
+# define BZERO_ZERO_VEC0() \
+  pxor %xmm0, %xmm0
+
 # define WMEMSET_SET_VEC0_AND_SET_RETURN(d, r) \
   movd d, %xmm0; \
   pshufd $0, %xmm0, %xmm0; \
@@ -53,6 +56,10 @@
 #   define MEMSET_CHK_SYMBOL(p,s)	p
 # endif
 # define MEMSET_SYMBOL(p,s)	memset
+#endif
+
+#ifndef BZERO_SYMBOL
+# define BZERO_SYMBOL(p,s)	__bzero
 #endif
 
 #ifndef WMEMSET_SYMBOL
