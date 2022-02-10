@@ -30,11 +30,7 @@
 # endif
 
 # undef weak_alias
-# ifdef ADD_BZERO
-# define weak_alias(original, alias) \
-	.weak bzero; bzero = __bzero
-# endif
-
+# define weak_alias(original, alias)
 # undef strong_alias
 # define strong_alias(ignored1, ignored2)
 #endif
