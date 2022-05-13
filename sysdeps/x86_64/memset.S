@@ -1,4 +1,4 @@
-/* memset/bzero -- set memory area to CH/0
+/* memset -- set memory area to CH/0
    Optimized version for x86-64.
    Copyright (C) 2002-2021 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
@@ -35,9 +35,6 @@
   punpcklwd %xmm0, %xmm0; \
   pshufd $0, %xmm0, %xmm0
 
-# define BZERO_ZERO_VEC0() \
-  pxor %xmm0, %xmm0
-
 # define WMEMSET_SET_VEC0_AND_SET_RETURN(d, r) \
   movd d, %xmm0; \
   pshufd $0, %xmm0, %xmm0; \
@@ -56,10 +53,6 @@
 #   define MEMSET_CHK_SYMBOL(p,s)	p
 # endif
 # define MEMSET_SYMBOL(p,s)	memset
-#endif
-
-#ifndef BZERO_SYMBOL
-# define BZERO_SYMBOL(p,s)	__bzero
 #endif
 
 #ifndef WMEMSET_SYMBOL
