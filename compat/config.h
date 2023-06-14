@@ -9,6 +9,6 @@
 //#define __LC_LAST	13
 
 #define RELEASE "stable"
-#define VERSION "2.34"
+#define VERSION "2.37"
 
 #endif

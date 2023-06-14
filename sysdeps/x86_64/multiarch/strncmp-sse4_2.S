@@ -1,5 +1,5 @@
 /* strncmp optimized with SSE4.2.
-   Copyright (C) 2017-2021 Free Software Foundation, Inc.
+   Copyright (C) 2017-2023 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,8 +16,5 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#if IS_IN (libc)
-# define STRCMP_SSE42 __strncmp_sse42
-# define USE_AS_STRNCMP
-# include "strcmp-sse42.S"
-#endif
+#define USE_AS_STRNCMP
+#include "strcmp-sse4_2.S"

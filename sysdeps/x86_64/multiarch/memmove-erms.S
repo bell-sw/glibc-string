@@ -1,5 +1,5 @@
 /* memcpy/mempcpy/memmove implement with rep movsb
-   Copyright (C) 2022 Free Software Foundation, Inc.
+   Copyright (C) 2022-2023 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -21,15 +21,15 @@
 
 #if defined USE_MULTIARCH && IS_IN (libc)
 	.text
-#ifdef ADD_CHECKS
+# ifdef ADD_CHECKS
 ENTRY (__mempcpy_chk_erms)
 	cmp	%RDX_LP, %RCX_LP
 	jb	HIDDEN_JUMPTARGET (__chk_fail)
 END (__mempcpy_chk_erms)
-#endif
+# endif
 
 /* Only used to measure performance of REP MOVSB.  */
-#ifdef USE_MEMPCPY
+# ifdef USE_MEMPCPY
 ENTRY (__mempcpy_erms)
 	mov	%RDI_LP, %RAX_LP
 	/* Skip zero length.  */
@@ -38,14 +38,14 @@ ENTRY (__mempcpy_erms)
 	add	%RDX_LP, %RAX_LP
 	jmp	L(start_movsb)
 END (__mempcpy_erms)
-#endif
+# endif
 
-#ifdef ADD_CHECKS
+# ifdef ADD_CHECKS
 ENTRY (__memmove_chk_erms)
 	cmp	%RDX_LP, %RCX_LP
 	jb	HIDDEN_JUMPTARGET (__chk_fail)
 END (__memmove_chk_erms)
-#endif
+# endif
 
 ENTRY (__memmove_erms)
 	movq	%rdi, %rax

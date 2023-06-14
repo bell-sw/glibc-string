@@ -39,8 +39,23 @@ STR_DIR   := sysdeps/x86_64/multiarch
 
 SKIP := $(STR_DIR)/memmove-vec-unaligned-erms.S \
 	$(STR_DIR)/memset-vec-unaligned-erms.S \
+	$(STR_DIR)/memchr-evex-base.S \
+	$(STR_DIR)/strchr-evex-base.S \
+	$(STR_DIR)/strlen-evex-base.S \
+	$(STR_DIR)/strrchr-evex-base.S \
+	$(STR_DIR)/strcat-strlen-avx2.h.S \
+	$(STR_DIR)/strcat-strlen-evex.h.S \
 	$(STR_DIR)/strcmp-sse42.S \
 	$(STR_DIR)/strlen-vec.S
+
+# Not used by any processor at the moment
+SKIP += $(STR_DIR)/memchr-evex512.S \
+	$(STR_DIR)/strchr-evex512.S \
+	$(STR_DIR)/strchrnul-evex512.S \
+	$(STR_DIR)/strlen-evex512.S \
+	$(STR_DIR)/strnlen-evex512.S \
+	$(STR_DIR)/strrchr-evex512.S \
+	$(STR_DIR)/wcslen-evex512.S
 
 STR_SRC_A := $(filter-out $(SKIP), $(wildcard $(STR_DIR)/*.S))
 STR_SRC_C := $(filter-out $(SKIP), $(wildcard $(STR_DIR)/*.c))

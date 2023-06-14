@@ -1,5 +1,5 @@
 /* Initialize CPU feature data via IFUNC relocation.
-   Copyright (C) 2015-2021 Free Software Foundation, Inc.
+   Copyright (C) 2015-2023 Free Software Foundation, Inc.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,9 @@ _dl_x86_init_cpu_features (void)
 {
   struct cpu_features *cpu_features = &GLRO(dl_x86_cpu_features);
   if (cpu_features->basic.kind == arch_kind_unknown)
-    init_cpu_features (cpu_features);
+    {
+      init_cpu_features (cpu_features);
+    }
 }
 
 #endif

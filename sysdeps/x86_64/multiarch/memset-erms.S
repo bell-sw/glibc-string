@@ -1,5 +1,5 @@
 /* memset implement with rep stosb
-   Copyright (C) 2022 Free Software Foundation, Inc.
+   Copyright (C) 2022-2023 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -21,12 +21,12 @@
 
 #if defined USE_MULTIARCH && IS_IN (libc)
 	.text
-#ifdef ADD_CHECKS
+# ifdef ADD_CHECKS
 ENTRY (__memset_chk_erms)
 	cmp	%RDX_LP, %RCX_LP
 	jb	HIDDEN_JUMPTARGET (__chk_fail)
 END (__memset_chk_erms)
-#endif
+# endif
 
 /* Only used to measure performance of REP STOSB.  */
 ENTRY (__memset_erms)

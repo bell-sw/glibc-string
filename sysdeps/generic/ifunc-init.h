@@ -1,6 +1,6 @@
 /* IFUNC generic definitions.
    This file is part of the GNU C Library.
-   Copyright (C) 2017-2021 Free Software Foundation, Inc.
+   Copyright (C) 2017-2023 Free Software Foundation, Inc.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -50,5 +50,8 @@
    '__<symbol>_<variant>' as the optimized implementation and
    '<symbol>_ifunc_selector' as the IFUNC selector.  */
 #define REDIRECT_NAME	EVALUATOR1 (__redirect, SYMBOL_NAME)
-#define OPTIMIZE(name)	EVALUATOR2 (SYMBOL_NAME, name)
 #define IFUNC_SELECTOR	EVALUATOR1 (SYMBOL_NAME, ifunc_selector)
+#define OPTIMIZE1(name)	EVALUATOR1 (SYMBOL_NAME, name)
+#define OPTIMIZE2(name)	EVALUATOR2 (SYMBOL_NAME, name)
+/* Default is to use OPTIMIZE2.  */
+#define OPTIMIZE(name)	OPTIMIZE2(name)

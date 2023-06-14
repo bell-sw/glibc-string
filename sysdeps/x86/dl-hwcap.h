@@ -1,5 +1,5 @@
 /* x86 version of hardware capability information handling macros.
-   Copyright (C) 2017-2021 Free Software Foundation, Inc.
+   Copyright (C) 2017-2023 Free Software Foundation, Inc.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -55,20 +55,6 @@ __attribute__ ((unused))
 _dl_hwcap_string (int idx)
 {
   return GLRO(dl_x86_hwcap_flags)[idx];
-};
-
-static inline int
-__attribute__ ((unused, always_inline))
-_dl_string_hwcap (const char *str)
-{
-  int i;
-
-  for (i = HWCAP_START; i < HWCAP_COUNT; i++)
-    {
-      if (strcmp (str, GLRO(dl_x86_hwcap_flags)[i]) == 0)
-	return i;
-    }
-  return -1;
 };
 
 /* We cannot provide a general printing function.  */

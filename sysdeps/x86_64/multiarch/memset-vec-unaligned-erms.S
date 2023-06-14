@@ -1,5 +1,5 @@
 /* memset with unaligned store and rep stosb
-   Copyright (C) 2016-2022 Free Software Foundation, Inc.
+   Copyright (C) 2016-2023 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -34,14 +34,6 @@
 #ifndef WMEMSET_CHK_SYMBOL
 # define WMEMSET_CHK_SYMBOL(p,s)	WMEMSET_SYMBOL(p, s)
 #endif
-#endif
-
-#ifndef XMM0
-# define XMM0				xmm0
-#endif
-
-#ifndef YMM0
-# define YMM0				ymm0
 #endif
 
 #ifndef VZEROUPPER
@@ -114,11 +106,13 @@
 
 	.section SECTION(.text), "ax", @progbits
 #if IS_IN (libc)
-# if defined SHARED && defined ADD_CHECKS
+# if defined SHARED
+# if defined ADD_CHECKS
 ENTRY_CHK (WMEMSET_CHK_SYMBOL (__wmemset_chk, unaligned))
 	cmp	%RDX_LP, %RCX_LP
 	jb	HIDDEN_JUMPTARGET (__chk_fail)
 END_CHK (WMEMSET_CHK_SYMBOL (__wmemset_chk, unaligned))
+# endif
 # endif
 
 ENTRY (WMEMSET_SYMBOL (__wmemset, unaligned))
@@ -132,11 +126,13 @@ ENTRY (WMEMSET_SYMBOL (__wmemset, unaligned))
 END (WMEMSET_SYMBOL (__wmemset, unaligned))
 #endif
 
-#if defined SHARED && IS_IN (libc) && defined ADD_CHECKS
+#if defined SHARED && IS_IN (libc)
+#if defined ADD_CHECKS
 ENTRY_CHK (MEMSET_CHK_SYMBOL (__memset_chk, unaligned))
 	cmp	%RDX_LP, %RCX_LP
 	jb	HIDDEN_JUMPTARGET (__chk_fail)
 END_CHK (MEMSET_CHK_SYMBOL (__memset_chk, unaligned))
+#endif
 #endif
 
 ENTRY (MEMSET_SYMBOL (__memset, unaligned))
@@ -152,17 +148,19 @@ L(entry_from_wmemset):
 	cmpq	$(VEC_SIZE * 2), %rdx
 	ja	L(more_2x_vec)
 	/* From VEC and to 2 * VEC.  No branch when size == VEC_SIZE.  */
-	VMOVU	%VEC(0), -VEC_SIZE(%rdi,%rdx)
-	VMOVU	%VEC(0), (%rdi)
+	VMOVU	%VMM(0), -VEC_SIZE(%rdi,%rdx)
+	VMOVU	%VMM(0), (%rdi)
 	VZEROUPPER_RETURN
 #if defined USE_MULTIARCH && IS_IN (libc)
 END (MEMSET_SYMBOL (__memset, unaligned))
 
-# if defined SHARED && IS_IN (libc) && defined ADD_CHECKS
+# if defined SHARED && IS_IN (libc)
+# if defined ADD_CHECKS
 ENTRY_CHK (MEMSET_CHK_SYMBOL (__memset_chk, unaligned_erms))
 	cmp	%RDX_LP, %RCX_LP
 	jb	HIDDEN_JUMPTARGET (__chk_fail)
 END_CHK (MEMSET_CHK_SYMBOL (__memset_chk, unaligned_erms))
+# endif
 # endif
 
 ENTRY_P2ALIGN (MEMSET_SYMBOL (__memset, unaligned_erms), 6)
@@ -177,19 +175,19 @@ ENTRY_P2ALIGN (MEMSET_SYMBOL (__memset, unaligned_erms), 6)
 	cmp	$(VEC_SIZE * 2), %RDX_LP
 	ja	L(stosb_more_2x_vec)
 	/* From VEC and to 2 * VEC.  No branch when size == VEC_SIZE.  */
-	VMOVU	%VEC(0), (%rdi)
-	VMOVU	%VEC(0), (VEC_SIZE * -1)(%rdi, %rdx)
+	VMOVU	%VMM(0), (%rdi)
+	VMOVU	%VMM(0), (VEC_SIZE * -1)(%rdi, %rdx)
 	VZEROUPPER_RETURN
 #endif
 
 	.p2align 4,, 4
 L(last_2x_vec):
 #ifdef USE_LESS_VEC_MASK_STORE
-	VMOVU	%VEC(0), (VEC_SIZE * -2)(%rdi, %rdx)
-	VMOVU	%VEC(0), (VEC_SIZE * -1)(%rdi, %rdx)
+	VMOVU	%VMM(0), (VEC_SIZE * -2)(%rdi, %rdx)
+	VMOVU	%VMM(0), (VEC_SIZE * -1)(%rdi, %rdx)
 #else
-	VMOVU	%VEC(0), (VEC_SIZE * -2)(%rdi)
-	VMOVU	%VEC(0), (VEC_SIZE * -1)(%rdi)
+	VMOVU	%VMM(0), (VEC_SIZE * -2)(%rdi)
+	VMOVU	%VMM(0), (VEC_SIZE * -1)(%rdi)
 #endif
 	VZEROUPPER_RETURN
 
@@ -223,7 +221,7 @@ L(less_vec_from_wmemset):
 	bzhil	%edx, %ecx, %ecx
 	kmovd	%ecx, %k1
 # endif
-	vmovdqu8 %VEC(0), (%rax){%k1}
+	vmovdqu8 %VMM(0), (%rax){%k1}
 	VZEROUPPER_RETURN
 
 # if defined USE_MULTIARCH && IS_IN (libc)
@@ -251,8 +249,8 @@ L(stosb_more_2x_vec):
 	   and (4x, 8x] jump to target.  */
 L(more_2x_vec):
 	/* Store next 2x vec regardless.  */
-	VMOVU	%VEC(0), (%rdi)
-	VMOVU	%VEC(0), (VEC_SIZE * 1)(%rdi)
+	VMOVU	%VMM(0), (%rdi)
+	VMOVU	%VMM(0), (VEC_SIZE * 1)(%rdi)
 
 
 	/* Two different methods of setting up pointers / compare. The two
@@ -280,8 +278,8 @@ L(more_2x_vec):
 #endif
 
 	/* Store next 2x vec regardless.  */
-	VMOVU	%VEC(0), (VEC_SIZE * 2)(%rax)
-	VMOVU	%VEC(0), (VEC_SIZE * 3)(%rax)
+	VMOVU	%VMM(0), (VEC_SIZE * 2)(%rax)
+	VMOVU	%VMM(0), (VEC_SIZE * 3)(%rax)
 
 
 #if defined USE_WITH_EVEX || defined USE_WITH_AVX512
@@ -306,20 +304,20 @@ L(more_2x_vec):
 	andq	$(VEC_SIZE * -2), %LOOP_REG
 	.p2align 4
 L(loop):
-	VMOVA	%VEC(0), LOOP_4X_OFFSET(%LOOP_REG)
-	VMOVA	%VEC(0), (VEC_SIZE + LOOP_4X_OFFSET)(%LOOP_REG)
-	VMOVA	%VEC(0), (VEC_SIZE * 2 + LOOP_4X_OFFSET)(%LOOP_REG)
-	VMOVA	%VEC(0), (VEC_SIZE * 3 + LOOP_4X_OFFSET)(%LOOP_REG)
+	VMOVA	%VMM(0), LOOP_4X_OFFSET(%LOOP_REG)
+	VMOVA	%VMM(0), (VEC_SIZE + LOOP_4X_OFFSET)(%LOOP_REG)
+	VMOVA	%VMM(0), (VEC_SIZE * 2 + LOOP_4X_OFFSET)(%LOOP_REG)
+	VMOVA	%VMM(0), (VEC_SIZE * 3 + LOOP_4X_OFFSET)(%LOOP_REG)
 	subq	$-(VEC_SIZE * 4), %LOOP_REG
 	cmpq	%END_REG, %LOOP_REG
 	jb	L(loop)
 	.p2align 4,, MOV_SIZE
 L(last_4x_vec):
-	VMOVU	%VEC(0), LOOP_4X_OFFSET(%END_REG)
-	VMOVU	%VEC(0), (VEC_SIZE + LOOP_4X_OFFSET)(%END_REG)
-	VMOVU	%VEC(0), (VEC_SIZE * 2 + LOOP_4X_OFFSET)(%END_REG)
-	VMOVU	%VEC(0), (VEC_SIZE * 3 + LOOP_4X_OFFSET)(%END_REG)
-L(return):
+	VMOVU	%VMM(0), LOOP_4X_OFFSET(%END_REG)
+	VMOVU	%VMM(0), (VEC_SIZE + LOOP_4X_OFFSET)(%END_REG)
+	VMOVU	%VMM(0), (VEC_SIZE * 2 + LOOP_4X_OFFSET)(%END_REG)
+	VMOVU	%VMM(0), (VEC_SIZE * 3 + LOOP_4X_OFFSET)(%END_REG)
+L(return_vzeroupper):
 #if VEC_SIZE > 16
 	ZERO_UPPER_VEC_REGISTERS_RETURN
 #else
@@ -357,7 +355,7 @@ L(cross_page):
 	jge	L(between_16_31)
 #endif
 #ifndef USE_XMM_LESS_VEC
-	MOVQ	%XMM0, %SET_REG64
+	MOVQ	%VMM_128(0), %SET_REG64
 #endif
 	cmpl	$8, %edx
 	jge	L(between_8_15)
@@ -376,8 +374,8 @@ L(between_0_0):
 	.p2align 4,, SMALL_MEMSET_ALIGN(MOV_SIZE, RET_SIZE)
 	/* From 32 to 63.  No branch when size == 32.  */
 L(between_32_63):
-	VMOVU	%YMM0, (%LESS_VEC_REG)
-	VMOVU	%YMM0, -32(%LESS_VEC_REG, %rdx)
+	VMOVU	%VMM_256(0), (%LESS_VEC_REG)
+	VMOVU	%VMM_256(0), -32(%LESS_VEC_REG, %rdx)
 	VZEROUPPER_RETURN
 #endif
 
@@ -385,8 +383,8 @@ L(between_32_63):
 	.p2align 4,, SMALL_MEMSET_ALIGN(MOV_SIZE, 1)
 L(between_16_31):
 	/* From 16 to 31.  No branch when size == 16.  */
-	VMOVU	%XMM0, (%LESS_VEC_REG)
-	VMOVU	%XMM0, -16(%LESS_VEC_REG, %rdx)
+	VMOVU	%VMM_128(0), (%LESS_VEC_REG)
+	VMOVU	%VMM_128(0), -16(%LESS_VEC_REG, %rdx)
 	ret
 #endif
 
@@ -396,8 +394,8 @@ L(between_16_31):
 L(between_8_15):
 	/* From 8 to 15.  No branch when size == 8.  */
 #ifdef USE_XMM_LESS_VEC
-	MOVQ	%XMM0, (%rdi)
-	MOVQ	%XMM0, -8(%rdi, %rdx)
+	MOVQ	%VMM_128(0), (%rdi)
+	MOVQ	%VMM_128(0), -8(%rdi, %rdx)
 #else
 	movq	%SET_REG64, (%LESS_VEC_REG)
 	movq	%SET_REG64, -8(%LESS_VEC_REG, %rdx)
@@ -410,8 +408,8 @@ L(between_8_15):
 L(between_4_7):
 	/* From 4 to 7.  No branch when size == 4.  */
 #ifdef USE_XMM_LESS_VEC
-	MOVD	%XMM0, (%rdi)
-	MOVD	%XMM0, -4(%rdi, %rdx)
+	MOVD	%VMM_128(0), (%rdi)
+	MOVD	%VMM_128(0), -4(%rdi, %rdx)
 #else
 	movl	%SET_REG32, (%LESS_VEC_REG)
 	movl	%SET_REG32, -4(%LESS_VEC_REG, %rdx)

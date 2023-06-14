@@ -1,4 +1,7 @@
+#ifndef STPNCPY
+# define STPNCPY	__stpncpy_avx2
+#endif
+
 #define USE_AS_STPCPY
-#define USE_AS_STRNCPY
-#define STRCPY __stpncpy_avx2
-#include "strcpy-avx2.S"
+#define STRNCPY	STPNCPY
+#include "strncpy-avx2.S"

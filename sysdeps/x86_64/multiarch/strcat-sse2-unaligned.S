@@ -1,6 +1,5 @@
 /* strcat with SSE2
-   Copyright (C) 2011-2021 Free Software Foundation, Inc.
-   Contributed by Intel Corporation.
+   Copyright (C) 2011-2023 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,7 +16,12 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#if IS_IN (libc)
+#include <isa-level.h>
+
+/* MINIMUM_X86_ISA_LEVEL <= 2 because there is no V2 implementation
+   so we need this to build for ISA V2 builds. */
+#if ISA_SHOULD_BUILD (2)
+
 
 # include <sysdep.h>
 
@@ -31,6 +35,10 @@
 ENTRY (STRCAT)
 	mov	%rdi, %r9
 # ifdef USE_AS_STRNCAT
+#  ifdef __ILP32__
+	/* Clear the upper 32 bits.  */
+	movl	%edx, %edx
+#  endif
 	mov	%rdx, %r8
 # endif
 
