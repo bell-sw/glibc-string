@@ -2,7 +2,10 @@
 
 This is a small part of the glibc that only includes cpu features detection,
 GNU indirect functions that select an appropriate implementation,
-and the following optimized asm string versions for x86-64-v2:
+and the following optimized asm string versions:
+
+x86-64-v2
+=========
 
 * `memchr`: avx2, avx2_rtm, evex, evex_rtm, sse2
 
@@ -64,3 +67,39 @@ LD_PRELOAD=libglibc-string.so myprogram
 Or linked to a program directly, either statically or dynamically.
 
 The library size: ~132K.
+
+
+aarch64
+=======
+* `memcmp`: advanced SIMD, unaligned accesses
+* `memchr`:
+  - generic: advanced SIMD, MTE compatible
+  - nosimd: AmpereComputing eMAG
+* `memrchr`: advanced SIMD, MTE compatible
+* `memcpy`, `memmove`:
+  - generic (advanced SIMD, unaligned accesses)
+  - A64FX
+  - SVE (Linux kernels >= v6.2 or 5.14)
+  - ThunderX
+  - ThunderX2
+  - MOPS
+* `memset`:
+  - generic (unaligned accesses)
+  - A64FX
+  - AmpereComputing eMAG
+  - Kunpeng920
+  - ZVA size == 64
+  - MOPS
+* `strchr`: advanced SIMD, MTE compatible
+* `strrchr`: advanced SIMD, MTE compatible
+* `strchrnul`: advanced SIMD, MTE compatible
+* `strcpy`: advanced SIMD, MTE compatible
+* `stpcpy`: advanced SIMD, MTE compatible
+* `strcmp`: MTE compatible
+* `strncmp`: MTE compatible
+* `strlen`:
+  - generic: advanced SIMD, MTE compatible
+  - asimd: advanced SIMD, not MTE compatible
+* `strnlen`: advanced SIMD, MTE compatible
+
+The library size: ~68K.
