@@ -26,6 +26,9 @@
 # define HWCAP2_MOPS		(1UL << 43)
 #endif
 
+/* Minimum supported kernel version */
+#define __LINUX_KERNEL_VERSION 0x030a00
+
 #include <libc-symbols.h>
 
 #endif /* _GLIBC_CMP_H */
