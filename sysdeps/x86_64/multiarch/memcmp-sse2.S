@@ -1,5 +1,5 @@
 /* memcmp with SSE2.
-   Copyright (C) 2017-2023 Free Software Foundation, Inc.
+   Copyright (C) 2017-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -410,7 +410,7 @@ L(ret_nonzero_vec_start_4_5):
 	.p2align 4,, 8
 L(ret_nonzero_vec_end_1):
 	pmovmskb %xmm1, %ecx
-	/* High 16 bits of eax guranteed to be all ones. Rotate them in
+	/* High 16 bits of eax guaranteed to be all ones. Rotate them in
 	   to we can do `or + not` with just `xor`.  */
 	rorl	$16, %eax
 	xorl	%ecx, %eax
@@ -562,7 +562,7 @@ L(ret_nonzero_loop):
 	sall	$(VEC_SIZE * 1), %edx
 	leal	1(%rcx, %rdx), %edx
 	pmovmskb %xmm2, %ecx
-	/* High 16 bits of eax guranteed to be all ones. Rotate them in
+	/* High 16 bits of eax guaranteed to be all ones. Rotate them in
 	   to we can do `or + not` with just `xor`.  */
 	rorl	$16, %eax
 	xorl	%ecx, %eax

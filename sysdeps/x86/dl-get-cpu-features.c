@@ -1,5 +1,5 @@
 /* Initialize CPU feature data via IFUNC relocation.
-   Copyright (C) 2015-2023 Free Software Foundation, Inc.
+   Copyright (C) 2015-2024 Free Software Foundation, Inc.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -164,4 +164,6 @@ _dl_diagnostics_cpu (void)
                             cpu_features->level3_cache_linesize);
   print_cpu_features_value ("level4_cache_size",
                             cpu_features->level4_cache_size);
+  print_cpu_features_value ("cachesize_non_temporal_divisor",
+			    cpu_features->cachesize_non_temporal_divisor);
 }

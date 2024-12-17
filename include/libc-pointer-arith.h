@@ -1,5 +1,5 @@
 /* Helper macros for pointer arithmetic.
-   Copyright (C) 2012-2023 Free Software Foundation, Inc.
+   Copyright (C) 2012-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -64,7 +64,7 @@
 #define PTR_IS_ALIGNED(base, size) \
   ((((uintptr_t) (base)) & (size - 1)) == 0)
 
-/* Returns the ptrdiff_t diference between P1 and P2.  */
+/* Returns the ptrdiff_t difference between P1 and P2.  */
 #define PTR_DIFF(p1, p2) \
   ((ptrdiff_t)((uintptr_t)(p1) - (uintptr_t)(p2)))
 

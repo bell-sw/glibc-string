@@ -1,5 +1,5 @@
 /* Data structure for x86 CPU features.
-   Copyright (C) 2020-2023 Free Software Foundation, Inc.
+   Copyright (C) 2020-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -29,7 +29,7 @@
 
 enum
 {
-  CPUID_INDEX_MAX = CPUID_INDEX_14_ECX_0 + 1
+  CPUID_INDEX_MAX = CPUID_INDEX_24_ECX_0 + 1
 };
 
 enum
@@ -302,13 +302,25 @@ enum
 /* CPUID_INDEX_7_ECX_1.  */
 
 /* EAX.  */
+#define bit_cpu_RAO_INT		(1u << 3)
 #define bit_cpu_AVX_VNNI	(1u << 4)
 #define bit_cpu_AVX512_BF16	(1u << 5)
+#define bit_cpu_CMPCCXADD	(1u << 7)
 #define bit_cpu_FZLRM		(1u << 10)
 #define bit_cpu_FSRS		(1u << 11)
 #define bit_cpu_FSRCS		(1u << 12)
+#define bit_cpu_AMX_FP16	(1u << 21)
 #define bit_cpu_HRESET		(1u << 22)
+#define bit_cpu_AVX_IFMA	(1u << 23)
 #define bit_cpu_LAM		(1u << 26)
+
+/* EDX.  */
+#define bit_cpu_AVX_VNNI_INT8	(1u << 4)
+#define bit_cpu_AVX_NE_CONVERT	(1u << 5)
+#define bit_cpu_AMX_COMPLEX	(1u << 8)
+#define bit_cpu_PREFETCHI	(1u << 14)
+#define bit_cpu_AVX10		(1u << 19)
+#define bit_cpu_APX_F		(1u << 21)
 
 /* CPUID_INDEX_19.  */
 
@@ -320,6 +332,13 @@ enum
 
 /* EBX.  */
 #define bit_cpu_PTWRITE		(1u << 4)
+
+/* CPUID_INDEX_24_ECX_0.  */
+
+/* EBX.  */
+#define bit_cpu_AVX10_XMM		(1u << 16)
+#define bit_cpu_AVX10_YMM		(1u << 17)
+#define bit_cpu_AVX10_ZMM		(1u << 18)
 
 /* CPUID_INDEX_1.  */
 
@@ -537,13 +556,23 @@ enum
 /* CPUID_INDEX_7_ECX_1.  */
 
 /* EAX.  */
+#define index_cpu_RAO_INT	CPUID_INDEX_7_ECX_1
 #define index_cpu_AVX_VNNI	CPUID_INDEX_7_ECX_1
 #define index_cpu_AVX512_BF16	CPUID_INDEX_7_ECX_1
+#define index_cpu_CMPCCXADD	CPUID_INDEX_7_ECX_1
 #define index_cpu_FZLRM		CPUID_INDEX_7_ECX_1
 #define index_cpu_FSRS		CPUID_INDEX_7_ECX_1
 #define index_cpu_FSRCS		CPUID_INDEX_7_ECX_1
+#define index_cpu_AMX_FP16	CPUID_INDEX_7_ECX_1
 #define index_cpu_HRESET	CPUID_INDEX_7_ECX_1
+#define index_cpu_AVX_IFMA	CPUID_INDEX_7_ECX_1
 #define index_cpu_LAM		CPUID_INDEX_7_ECX_1
+#define index_cpu_AVX_VNNI_INT8	CPUID_INDEX_7_ECX_1
+#define index_cpu_AVX_NE_CONVERT CPUID_INDEX_7_ECX_1
+#define index_cpu_AMX_COMPLEX	CPUID_INDEX_7_ECX_1
+#define index_cpu_PREFETCHI	CPUID_INDEX_7_ECX_1
+#define index_cpu_AVX10		CPUID_INDEX_7_ECX_1
+#define index_cpu_APX_F		CPUID_INDEX_7_ECX_1
 
 /* CPUID_INDEX_19.  */
 
@@ -555,6 +584,13 @@ enum
 
 /* EBX.  */
 #define index_cpu_PTWRITE	CPUID_INDEX_14_ECX_0
+
+/* CPUID_INDEX_24_ECX_0.  */
+
+/* EBX.  */
+#define index_cpu_AVX10_XMM	CPUID_INDEX_24_ECX_0
+#define index_cpu_AVX10_YMM	CPUID_INDEX_24_ECX_0
+#define index_cpu_AVX10_ZMM	CPUID_INDEX_24_ECX_0
 
 /* CPUID_INDEX_1.  */
 
@@ -772,13 +808,25 @@ enum
 /* CPUID_INDEX_7_ECX_1.  */
 
 /* EAX.  */
+#define reg_RAO_INT		eax
 #define reg_AVX_VNNI		eax
 #define reg_AVX512_BF16		eax
+#define reg_CMPCCXADD		eax
 #define reg_FZLRM		eax
 #define reg_FSRS		eax
 #define reg_FSRCS		eax
+#define reg_AMX_FP16		eax
 #define reg_HRESET		eax
+#define reg_AVX_IFMA		eax
 #define reg_LAM			eax
+
+/* EDX.  */
+#define reg_AVX_VNNI_INT8	edx
+#define reg_AVX_NE_CONVERT	edx
+#define reg_AMX_COMPLEX		edx
+#define reg_PREFETCHI		edx
+#define reg_AVX10		edx
+#define reg_APX_F		edx
 
 /* CPUID_INDEX_19.  */
 
@@ -790,6 +838,14 @@ enum
 
 /* EBX.  */
 #define reg_PTWRITE		ebx
+
+/* CPUID_INDEX_24_ECX_0.  */
+
+/* EBX.  */
+#define reg_AVX10_XMM		ebx
+#define reg_AVX10_YMM		ebx
+#define reg_AVX10_ZMM		ebx
+
 
 /* PREFERRED_FEATURE_INDEX_1.  First define the bitindex values
    sequentially, then define the bit_arch* and index_arch_* lookup
@@ -817,6 +873,7 @@ enum
 #define bit_ZMM16_31_state	(1u << 7)
 #define bit_XTILECFG_state	(1u << 17)
 #define bit_XTILEDATA_state	(1u << 18)
+#define bit_APX_state		(1u << 19)
 
 enum cpu_features_kind
 {
@@ -877,6 +934,8 @@ struct cpu_features
   /* The full state size for XSAVE when XSAVEC is disabled by
 
      GLIBC_TUNABLES=glibc.cpu.hwcaps=-XSAVEC
+
+     and the AMX state size when XSAVEC is available.
    */
   unsigned int xsave_state_full_size;
   /* Data cache size for use in memory and string routines, typically
@@ -917,6 +976,9 @@ struct cpu_features
   unsigned long int level3_cache_linesize;
   /* /_SC_LEVEL4_CACHE_SIZE.  */
   unsigned long int level4_cache_size;
+  /* When no user non_temporal_threshold is specified. We default to
+     cachesize / cachesize_non_temporal_divisor.  */
+  unsigned long int cachesize_non_temporal_divisor;
 };
 
 /* Get a pointer to the CPU features structure.  */
@@ -933,6 +995,9 @@ extern const struct cpu_features *__get_cpu_features (void)
 /*
 # define _dl_x86_get_cpu_features() (&GLRO(dl_x86_cpu_features))
 extern void _dl_x86_init_cpu_features (void) attribute_hidden;
+
+extern void _dl_cet_setup_features (unsigned int)
+    attribute_hidden;
 #endif
 */
 

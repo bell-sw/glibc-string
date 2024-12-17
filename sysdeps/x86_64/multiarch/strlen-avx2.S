@@ -1,5 +1,5 @@
 /* strlen/strnlen/wcslen/wcsnlen optimized with AVX2.
-   Copyright (C) 2017-2023 Free Software Foundation, Inc.
+   Copyright (C) 2017-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -224,7 +224,7 @@ L(cross_page_continue):
 	   since data is only aligned to VEC_SIZE.  */
 # ifdef USE_AS_STRNLEN
 	/* + 1 because rdi is aligned to VEC_SIZE - 1. + CHAR_SIZE
-	   because it simplies the logic in last_4x_vec_or_less.  */
+	   because it simplifies the logic in last_4x_vec_or_less.  */
 	leaq	(VEC_SIZE * 4 + CHAR_SIZE + 1)(%rdi), %rcx
 	subq	%rdx, %rcx
 #  ifdef USE_AS_WCSLEN

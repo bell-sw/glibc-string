@@ -1,5 +1,5 @@
 /* Header defining the minimum x86 ISA level
-   Copyright (C) 2022-2023 Free Software Foundation, Inc.
+   Copyright (C) 2022-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -35,8 +35,18 @@
 # define __X86_ISA_V1 0
 #endif
 
-#if __X86_ISA_V1 && defined __GCC_HAVE_SYNC_COMPARE_AND_SWAP_16          \
-    && defined __LAHF_SAHF__ && defined __POPCNT__ && defined __SSE3__   \
+#ifdef __x86_64__
+# ifdef __GCC_HAVE_SYNC_COMPARE_AND_SWAP_16
+#  define __GCC_HAVE_SYNC_COMPARE_AND_SWAP
+# endif
+#else
+# ifdef __GCC_HAVE_SYNC_COMPARE_AND_SWAP_8
+#  define __GCC_HAVE_SYNC_COMPARE_AND_SWAP
+# endif
+#endif
+
+#if __X86_ISA_V1 && defined __GCC_HAVE_SYNC_COMPARE_AND_SWAP		      \
+    && defined HAVE_X86_LAHF_SAHF && defined __POPCNT__ && defined __SSE3__   \
     && defined __SSSE3__ && defined __SSE4_1__ && defined __SSE4_2__
 /* NB: ISAs in x86-64 ISA level v2 are used.  */
 # define __X86_ISA_V2 1
@@ -61,8 +71,10 @@
 # define __X86_ISA_V4 0
 #endif
 
-#define MINIMUM_X86_ISA_LEVEL                                                 \
+#ifndef MINIMUM_X86_ISA_LEVEL
+# define MINIMUM_X86_ISA_LEVEL                                                 \
   (__X86_ISA_V1 + __X86_ISA_V2 + __X86_ISA_V3 + __X86_ISA_V4)
+#endif
 
 /* Depending on the minimum ISA level, a feature check result can be a
    compile-time constant.. */

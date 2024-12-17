@@ -1,5 +1,5 @@
 /* strcmp with unaligned loads
-   Copyright (C) 2013-2023 Free Software Foundation, Inc.
+   Copyright (C) 2013-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 
 /* Continue building as ISA level 2.  We use this as ISA V2 default
    because strcmp-sse42 uses pcmpstri (slow on some SSE4.2
-   processors) and this implementation is potenially faster than
+   processors) and this implementation is potentially faster than
    strcmp-sse42 (aside from the slower page cross case).  */
 #if ISA_SHOULD_BUILD (2)
 

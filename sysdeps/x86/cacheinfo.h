@@ -1,5 +1,5 @@
 /* x86 cache info.
-   Copyright (C) 2020-2023 Free Software Foundation, Inc.
+   Copyright (C) 2020-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -23,9 +23,9 @@
 #include <sysdep.h>
 
 #if HAVE_TUNABLES
-# define TUNABLE_NAMESPACE cpu
-# include <unistd.h>		/* Get STDOUT_FILENO for _dl_printf.  */
-# include <elf/dl-tunables.h>
+#define TUNABLE_NAMESPACE cpu
+#include <unistd.h>		/* Get STDOUT_FILENO for _dl_printf.  */
+#include <elf/dl-tunables.h>
 #endif
 
 #if IS_IN (libc)

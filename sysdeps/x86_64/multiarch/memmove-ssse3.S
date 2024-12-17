@@ -1,6 +1,6 @@
 /* memmove/memcpy/mempcpy optimized for aligned access with SSSE3.
    All versions must be listed in ifunc-impl-list.c.
-   Copyright (C) 2022-2023 Free Software Foundation, Inc.
+   Copyright (C) 2022-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -233,7 +233,7 @@ L(end_loop_fwd):
 	movups	%xmm7, 48(%r8)
 	ret
 
-	/* Extactly 64 bytes if `jmp L(end_loop_fwd)` is long encoding.
+	/* Exactly 64 bytes if `jmp L(end_loop_fwd)` is long encoding.
 	   60 bytes otherwise.  */
 # define ALIGNED_LOOP_FWD(align_by);	\
 	.p2align 6;	\
@@ -370,7 +370,7 @@ L(end_loop_bkwd):
 	ret
 
 
-	/* Extactly 64 bytes if `jmp L(end_loop_bkwd)` is long encoding.
+	/* Exactly 64 bytes if `jmp L(end_loop_bkwd)` is long encoding.
 	   60 bytes otherwise.  */
 # define ALIGNED_LOOP_BKWD(align_by);	\
 	.p2align 6;	\

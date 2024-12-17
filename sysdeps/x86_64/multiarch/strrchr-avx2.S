@@ -1,5 +1,5 @@
 /* strrchr/wcsrchr optimized with AVX2.
-   Copyright (C) 2017-2023 Free Software Foundation, Inc.
+   Copyright (C) 2017-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -176,7 +176,7 @@ L(aligned_more):
 	.p2align 4
 L(first_aligned_loop):
 	/* Do 2x VEC at a time. Any more and the cost of finding the
-	   match outweights loop benefit.  */
+	   match outweighs loop benefit.  */
 	vmovdqa	(VEC_SIZE * 0)(%rdi), %ymm4
 	vmovdqa	(VEC_SIZE * 1)(%rdi), %ymm5
 
@@ -324,7 +324,7 @@ L(cross_page):
 	vmovdqu	(%rsi), %ymm1
 	VPCMPEQ	%ymm1, %ymm0, %ymm6
 	vpmovmskb %ymm6, %ecx
-	/* Shift out zero CHAR matches that are before the begining of
+	/* Shift out zero CHAR matches that are before the beginning of
 	   src (rdi).  */
 	shrxl	%edi, %ecx, %ecx
 	testl	%ecx, %ecx
@@ -332,7 +332,7 @@ L(cross_page):
 	VPCMPEQ	%ymm1, %ymm7, %ymm1
 	vpmovmskb %ymm1, %eax
 
-	/* Shift out search CHAR matches that are before the begining of
+	/* Shift out search CHAR matches that are before the beginning of
 	   src (rdi).  */
 	shrxl	%edi, %eax, %eax
 	blsmskl	%ecx, %ecx

@@ -1,5 +1,5 @@
 /* strnlen/wcsnlen optimized with 256-bit EVEX instructions.
-   Copyright (C) 2022-2023 Free Software Foundation, Inc.
+   Copyright (C) 2022-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -336,7 +336,7 @@ L(loop_last_4x_vec):
 
 	VPTESTN	%VMM(3), %VMM(3), %k0
 
-	/* Seperate logic for VEC_SIZE == 64 and VEC_SIZE == 32 for
+	/* Separate logic for VEC_SIZE == 64 and VEC_SIZE == 32 for
 	   returning last 2x VEC. For VEC_SIZE == 64 we test each VEC
 	   individually, for VEC_SIZE == 32 we combine them in a single
 	   64-bit GPR.  */

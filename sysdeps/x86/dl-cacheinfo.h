@@ -1,5 +1,5 @@
 /* Initialize x86 cache info.
-   Copyright (C) 2020-2023 Free Software Foundation, Inc.
+   Copyright (C) 2020-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -187,7 +187,7 @@ intel_check_word (int name, unsigned int value, bool *has_level_2,
 	      ++round;
 	    }
 	  /* There is no other cache information anywhere else.  */
-	  break;
+	  return -1;
 	}
       else
 	{
@@ -257,28 +257,23 @@ handle_intel (int name, const struct cpu_features *cpu_features)
 
   /* OK, we can use the CPUID instruction to get all info about the
      caches.  */
-  unsigned int cnt = 0;
-  unsigned int max = 1;
   long int result = 0;
   bool no_level_2_or_3 = false;
   bool has_level_2 = false;
+  unsigned int eax;
+  unsigned int ebx;
+  unsigned int ecx;
+  unsigned int edx;
+  __cpuid (2, eax, ebx, ecx, edx);
 
-  while (cnt++ < max)
+  /* The low byte of EAX of CPUID leaf 2 should always return 1 and it
+     should be ignored.  If it isn't 1, use CPUID leaf 4 instead.  */
+  if ((eax & 0xff) != 1)
+    return intel_check_word (name, 0xff, &has_level_2, &no_level_2_or_3,
+			     cpu_features);
+  else
     {
-      unsigned int eax;
-      unsigned int ebx;
-      unsigned int ecx;
-      unsigned int edx;
-      __cpuid (2, eax, ebx, ecx, edx);
-
-      /* The low byte of EAX in the first round contain the number of
-	 rounds we have to make.  At least one, the one we are already
-	 doing.  */
-      if (cnt == 1)
-	{
-	  max = eax & 0xff;
-	  eax &= 0xffffff00;
-	}
+      eax &= 0xffffff00;
 
       /* Process the individual registers' value.  */
       result = intel_check_word (name, eax, &has_level_2,
@@ -796,7 +791,6 @@ dl_init_cacheinfo (struct cpu_features *cpu_features)
   long int data = -1;
   long int shared = -1;
   long int shared_per_thread = -1;
-  long int core = -1;
   unsigned int threads = 0;
   unsigned long int level1_icache_size = -1;
   unsigned long int level1_icache_linesize = -1;
@@ -814,7 +808,6 @@ dl_init_cacheinfo (struct cpu_features *cpu_features)
   if (cpu_features->basic.kind == arch_kind_intel)
     {
       data = handle_intel (_SC_LEVEL1_DCACHE_SIZE, cpu_features);
-      core = handle_intel (_SC_LEVEL2_CACHE_SIZE, cpu_features);
       shared = handle_intel (_SC_LEVEL3_CACHE_SIZE, cpu_features);
       shared_per_thread = shared;
 
@@ -827,7 +820,8 @@ dl_init_cacheinfo (struct cpu_features *cpu_features)
 	= handle_intel (_SC_LEVEL1_DCACHE_ASSOC, cpu_features);
       level1_dcache_linesize
 	= handle_intel (_SC_LEVEL1_DCACHE_LINESIZE, cpu_features);
-      level2_cache_size = core;
+      level2_cache_size
+	= handle_intel (_SC_LEVEL2_CACHE_SIZE, cpu_features);
       level2_cache_assoc
 	= handle_intel (_SC_LEVEL2_CACHE_ASSOC, cpu_features);
       level2_cache_linesize
@@ -840,12 +834,12 @@ dl_init_cacheinfo (struct cpu_features *cpu_features)
       level4_cache_size
 	= handle_intel (_SC_LEVEL4_CACHE_SIZE, cpu_features);
 
-      get_common_cache_info (&shared, &shared_per_thread, &threads, core);
+      get_common_cache_info (&shared, &shared_per_thread, &threads,
+			     level2_cache_size);
     }
   else if (cpu_features->basic.kind == arch_kind_zhaoxin)
     {
       data = handle_zhaoxin (_SC_LEVEL1_DCACHE_SIZE);
-      core = handle_zhaoxin (_SC_LEVEL2_CACHE_SIZE);
       shared = handle_zhaoxin (_SC_LEVEL3_CACHE_SIZE);
       shared_per_thread = shared;
 
@@ -854,19 +848,19 @@ dl_init_cacheinfo (struct cpu_features *cpu_features)
       level1_dcache_size = data;
       level1_dcache_assoc = handle_zhaoxin (_SC_LEVEL1_DCACHE_ASSOC);
       level1_dcache_linesize = handle_zhaoxin (_SC_LEVEL1_DCACHE_LINESIZE);
-      level2_cache_size = core;
+      level2_cache_size = handle_zhaoxin (_SC_LEVEL2_CACHE_SIZE);
       level2_cache_assoc = handle_zhaoxin (_SC_LEVEL2_CACHE_ASSOC);
       level2_cache_linesize = handle_zhaoxin (_SC_LEVEL2_CACHE_LINESIZE);
       level3_cache_size = shared;
       level3_cache_assoc = handle_zhaoxin (_SC_LEVEL3_CACHE_ASSOC);
       level3_cache_linesize = handle_zhaoxin (_SC_LEVEL3_CACHE_LINESIZE);
 
-      get_common_cache_info (&shared, &shared_per_thread, &threads, core);
+      get_common_cache_info (&shared, &shared_per_thread, &threads,
+			     level2_cache_size);
     }
   else if (cpu_features->basic.kind == arch_kind_amd)
     {
       data = handle_amd (_SC_LEVEL1_DCACHE_SIZE);
-      core = handle_amd (_SC_LEVEL2_CACHE_SIZE);
       shared = handle_amd (_SC_LEVEL3_CACHE_SIZE);
 
       level1_icache_size = handle_amd (_SC_LEVEL1_ICACHE_SIZE);
@@ -874,7 +868,7 @@ dl_init_cacheinfo (struct cpu_features *cpu_features)
       level1_dcache_size = data;
       level1_dcache_assoc = handle_amd (_SC_LEVEL1_DCACHE_ASSOC);
       level1_dcache_linesize = handle_amd (_SC_LEVEL1_DCACHE_LINESIZE);
-      level2_cache_size = core;
+      level2_cache_size = handle_amd (_SC_LEVEL2_CACHE_SIZE);;
       level2_cache_assoc = handle_amd (_SC_LEVEL2_CACHE_ASSOC);
       level2_cache_linesize = handle_amd (_SC_LEVEL2_CACHE_LINESIZE);
       level3_cache_size = shared;
@@ -885,12 +879,12 @@ dl_init_cacheinfo (struct cpu_features *cpu_features)
       if (shared <= 0)
         {
            /* No shared L3 cache.  All we have is the L2 cache.  */
-           shared = core;
+           shared = level2_cache_size;
         }
       else if (cpu_features->basic.family < 0x17)
         {
            /* Account for exclusive L2 and L3 caches.  */
-           shared += core;
+           shared += level2_cache_size;
         }
 
       shared_per_thread = shared;
@@ -909,19 +903,25 @@ dl_init_cacheinfo (struct cpu_features *cpu_features)
   cpu_features->level3_cache_linesize = level3_cache_linesize;
   cpu_features->level4_cache_size = level4_cache_size;
 
-  /* The default setting for the non_temporal threshold is 1/4 of size
-     of the chip's cache. For most Intel and AMD processors with an
-     initial release date between 2017 and 2023, a thread's typical
-     share of the cache is from 18-64MB. Using the 1/4 L3 is meant to
-     estimate the point where non-temporal stores begin out-competing
-     REP MOVSB. As well the point where the fact that non-temporal
-     stores are forced back to main memory would already occurred to the
-     majority of the lines in the copy. Note, concerns about the
-     entire L3 cache being evicted by the copy are mostly alleviated
-     by the fact that modern HW detects streaming patterns and
-     provides proper LRU hints so that the maximum thrashing
-     capped at 1/associativity. */
-  unsigned long int non_temporal_threshold = shared / 4;
+  unsigned long int cachesize_non_temporal_divisor
+      = cpu_features->cachesize_non_temporal_divisor;
+  if (cachesize_non_temporal_divisor <= 0)
+    cachesize_non_temporal_divisor = 4;
+
+  /* The default setting for the non_temporal threshold is [1/8, 1/2] of size
+     of the chip's cache (depending on `cachesize_non_temporal_divisor` which
+     is microarch specific. The default is 1/4). For most Intel processors
+     with an initial release date between 2017 and 2023, a thread's
+     typical share of the cache is from 18-64MB. Using a reasonable size
+     fraction of L3 is meant to estimate the point where non-temporal stores
+     begin out-competing REP MOVSB. As well the point where the fact that
+     non-temporal stores are forced back to main memory would already occurred
+     to the majority of the lines in the copy. Note, concerns about the entire
+     L3 cache being evicted by the copy are mostly alleviated by the fact that
+     modern HW detects streaming patterns and provides proper LRU hints so that
+     the maximum thrashing capped at 1/associativity. */
+  unsigned long int non_temporal_threshold
+      = shared / cachesize_non_temporal_divisor;
 
   /* If the computed non_temporal_threshold <= 3/4 * per-thread L3, we most
      likely have incorrect/incomplete cache info in which case, default to
@@ -945,8 +945,16 @@ dl_init_cacheinfo (struct cpu_features *cpu_features)
      reflected in the manual.  */
   unsigned long int maximum_non_temporal_threshold = SIZE_MAX >> 4;
   unsigned long int minimum_non_temporal_threshold = 0x4040;
+
+  /* If `non_temporal_threshold` less than `minimum_non_temporal_threshold`
+     it most likely means we failed to detect the cache info. We don't want
+     to default to `minimum_non_temporal_threshold` as such a small value,
+     while correct, has bad performance. We default to 64MB as reasonable
+     default bound. 64MB is likely conservative in that most/all systems would
+     choose a lower value so it should never forcing non-temporal stores when
+     they otherwise wouldn't be used.  */
   if (non_temporal_threshold < minimum_non_temporal_threshold)
-    non_temporal_threshold = minimum_non_temporal_threshold;
+    non_temporal_threshold = 64 * 1024 * 1024;
   else if (non_temporal_threshold > maximum_non_temporal_threshold)
     non_temporal_threshold = maximum_non_temporal_threshold;
 
@@ -985,6 +993,12 @@ dl_init_cacheinfo (struct cpu_features *cpu_features)
      short REP MOVSB (FSRM).  */
   if (CPU_FEATURE_USABLE_P (cpu_features, FSRM))
     rep_movsb_threshold = 2112;
+
+   /* For AMD CPUs that support ERMS (Zen3+), REP MOVSB is in a lot of
+      cases slower than the vectorized path (and for some alignments,
+      it is really slow, check BZ #30994).  */
+  if (cpu_features->basic.kind == arch_kind_amd)
+    rep_movsb_threshold = non_temporal_threshold;
 
   /* The default threshold to use Enhanced REP STOSB.  */
   unsigned long int rep_stosb_threshold = 2048;
@@ -1028,17 +1042,15 @@ dl_init_cacheinfo (struct cpu_features *cpu_features)
 			   SIZE_MAX);
 #endif
 
-  unsigned long int rep_movsb_stop_threshold;
-  /* ERMS feature is implemented from AMD Zen3 architecture and it is
-     performing poorly for data above L2 cache size. Henceforth, adding
-     an upper bound threshold parameter to limit the usage of Enhanced
-     REP MOVSB operations and setting its value to L2 cache size.  */
   if (cpu_features->basic.kind == arch_kind_amd)
-    rep_movsb_stop_threshold = core;
+    /* For AMD Zen3+ architecture, the performance of the vectorized loop is
+       slightly better than ERMS.  */
+    rep_stosb_threshold = SIZE_MAX;
+
+  unsigned long int rep_movsb_stop_threshold;
   /* Setting the upper bound of ERMS to the computed value of
-     non-temporal threshold for architectures other than AMD.  */
-  else
-    rep_movsb_stop_threshold = non_temporal_threshold;
+     non-temporal threshold for all architectures.  */
+  rep_movsb_stop_threshold = non_temporal_threshold;
 
   cpu_features->data_cache_size = data;
   cpu_features->shared_cache_size = shared;

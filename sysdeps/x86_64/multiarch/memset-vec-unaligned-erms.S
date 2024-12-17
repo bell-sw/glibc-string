@@ -1,5 +1,5 @@
 /* memset with unaligned store and rep stosb
-   Copyright (C) 2016-2023 Free Software Foundation, Inc.
+   Copyright (C) 2016-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -21,7 +21,9 @@
    2. If size is less than VEC, use integer register stores.
    3. If size is from VEC_SIZE to 2 * VEC_SIZE, use 2 VEC stores.
    4. If size is from 2 * VEC_SIZE to 4 * VEC_SIZE, use 4 VEC stores.
-   5. If size is more to 4 * VEC_SIZE, align to 4 * VEC_SIZE with
+   5. On machines ERMS feature, if size is greater or equal than
+      __x86_rep_stosb_threshold then REP STOSB will be used.
+   6. If size is more to 4 * VEC_SIZE, align to 4 * VEC_SIZE with
       4 VEC stores and store 4 * VEC at a time until done.  */
 
 #include <sysdep.h>
@@ -207,7 +209,7 @@ L(less_vec_from_wmemset):
 	   MEMSET_VDUP_TO_VEC0_AND_SET_RETURN as ptr from here on out.  */
 	andl	$(PAGE_SIZE - 1), %edi
 	/* Check if VEC_SIZE store cross page. Mask stores suffer
-	   serious performance degradation when it has to fault supress.
+	   serious performance degradation when it has to fault suppress.
 	 */
 	cmpl	$(PAGE_SIZE - VEC_SIZE), %edi
 	/* This is generally considered a cold target.  */
@@ -301,7 +303,7 @@ L(more_2x_vec):
 	leaq	(VEC_SIZE * 4)(%rax), %LOOP_REG
 #endif
 	/* Align dst for loop.  */
-	andq	$(VEC_SIZE * -2), %LOOP_REG
+	andq	$(VEC_SIZE * -1), %LOOP_REG
 	.p2align 4
 L(loop):
 	VMOVA	%VMM(0), LOOP_4X_OFFSET(%LOOP_REG)

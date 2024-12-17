@@ -1,5 +1,5 @@
 /* memrchr optimized with SSE2.
-   Copyright (C) 2017-2023 Free Software Foundation, Inc.
+   Copyright (C) 2017-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -50,7 +50,7 @@ ENTRY_P2ALIGN(MEMRCHR, 6)
 	jz	L(page_cross)
 
 	/* NB: This load happens regardless of whether rdx (len) is zero. Since
-	   it doesn't cross a page and the standard gurantees any pointer have
+	   it doesn't cross a page and the standard guarantees any pointer have
 	   at least one-valid byte this load must be safe. For the entire
 	   history of the x86 memrchr implementation this has been possible so
 	   no code "should" be relying on a zero-length check before this load.

@@ -1,6 +1,6 @@
 /* Initialize CPU feature data.
    This file is part of the GNU C Library.
-   Copyright (C) 2008-2023 Free Software Foundation, Inc.
+   Copyright (C) 2008-2024 Free Software Foundation, Inc.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -26,37 +26,82 @@
 
 #include <dl-hwcap.h>
 #include <libc-pointer-arith.h>
+#include <isa-level.h>
 #include <get-isa-level.h>
 #include <cacheinfo.h>
 #include <dl-cacheinfo.h>
-
-#include <sysdep.h>
+#include <dl-hwcap2.h>
 
 static uint64_t _dl_hwcap __attribute__ ((nocommon));
 static const char *_dl_platform;
-static uint64_t _dl_hwcap_mask __attribute__ ((nocommon));
 
 #if HAVE_TUNABLES
 extern void TUNABLE_CALLBACK (set_hwcaps) (tunable_val_t *)
   attribute_hidden;
 
-# if CET_ENABLED
+#if defined SHARED
+extern void _dl_tlsdesc_dynamic_fxsave (void) attribute_hidden;
+extern void _dl_tlsdesc_dynamic_xsave (void) attribute_hidden;
+extern void _dl_tlsdesc_dynamic_xsavec (void) attribute_hidden;
+
+# ifdef __x86_64__
+#  include <dl-plt-rewrite.h>
+
+static void
+TUNABLE_CALLBACK (set_plt_rewrite) (tunable_val_t *valp)
+{
+  /* We must be careful about where we put the call to
+     dl_plt_rewrite_supported() since it may generate
+     spurious SELinux log entries.  It should only be
+     attempted if the user requested a PLT rewrite.  */
+  if (valp->numval != 0 && dl_plt_rewrite_supported ())
+    {
+      /* Use JMPABS only on APX processors.  */
+      const struct cpu_features *cpu_features = __get_cpu_features ();
+      GL (dl_x86_feature_control).plt_rewrite
+	  = ((valp->numval > 1 && CPU_FEATURE_PRESENT_P (cpu_features, APX_F))
+		 ? plt_rewrite_jmpabs
+		 : plt_rewrite_jmp);
+    }
+}
+# else
+extern void _dl_tlsdesc_dynamic_fnsave (void) attribute_hidden;
+# endif
+#endif
+
+#ifdef __x86_64__
+extern void _dl_runtime_resolve_fxsave (void) attribute_hidden;
+extern void _dl_runtime_resolve_xsave (void) attribute_hidden;
+extern void _dl_runtime_resolve_xsavec (void) attribute_hidden;
+#endif
+
+
+#ifdef __LP64__
+static void
+TUNABLE_CALLBACK (set_prefer_map_32bit_exec) (tunable_val_t *valp)
+{
+  if (valp->numval)
+    GLRO(dl_x86_cpu_features).preferred[index_arch_Prefer_MAP_32BIT_EXEC]
+      |= bit_arch_Prefer_MAP_32BIT_EXEC;
+}
+#endif
+
+#if CET_ENABLED
 extern void TUNABLE_CALLBACK (set_x86_ibt) (tunable_val_t *)
   attribute_hidden;
 extern void TUNABLE_CALLBACK (set_x86_shstk) (tunable_val_t *)
   attribute_hidden;
-# endif
-#endif
 
-#if CET_ENABLED
 # include <dl-cet.h>
 #endif
+
+#endif /* HAVE_TUNABLES */
 
 static void
 update_active (struct cpu_features *cpu_features)
 {
   /* Copy the cpuid bits to active bits for CPU featuress whose usability
-     in user space can be detected without additonal OS support.  */
+     in user space can be detected without additional OS support.  */
   CPU_FEATURE_SET_ACTIVE (cpu_features, SSE3);
   CPU_FEATURE_SET_ACTIVE (cpu_features, PCLMULQDQ);
   CPU_FEATURE_SET_ACTIVE (cpu_features, SSSE3);
@@ -105,24 +150,34 @@ update_active (struct cpu_features *cpu_features)
   CPU_FEATURE_SET_ACTIVE (cpu_features, TBM);
   CPU_FEATURE_SET_ACTIVE (cpu_features, RDTSCP);
   CPU_FEATURE_SET_ACTIVE (cpu_features, WBNOINVD);
+  CPU_FEATURE_SET_ACTIVE (cpu_features, RAO_INT);
+  CPU_FEATURE_SET_ACTIVE (cpu_features, CMPCCXADD);
   CPU_FEATURE_SET_ACTIVE (cpu_features, FZLRM);
   CPU_FEATURE_SET_ACTIVE (cpu_features, FSRS);
   CPU_FEATURE_SET_ACTIVE (cpu_features, FSRCS);
+  CPU_FEATURE_SET_ACTIVE (cpu_features, PREFETCHI);
   CPU_FEATURE_SET_ACTIVE (cpu_features, PTWRITE);
 
   if (!CPU_FEATURES_CPU_P (cpu_features, RTM_ALWAYS_ABORT))
     CPU_FEATURE_SET_ACTIVE (cpu_features, RTM);
 
-#if CET_ENABLED
+#if CET_ENABLED && 0
   CPU_FEATURE_SET_ACTIVE (cpu_features, IBT);
   CPU_FEATURE_SET_ACTIVE (cpu_features, SHSTK);
 #endif
 
+  enum
+  {
+    os_xmm = 1,
+    os_ymm = 2,
+    os_zmm = 4
+  } os_vector_size = os_xmm;
   /* Can we call xgetbv?  */
   if (CPU_FEATURES_CPU_P (cpu_features, OSXSAVE))
     {
       unsigned int xcrlow;
       unsigned int xcrhigh;
+      CPU_FEATURE_SET_ACTIVE (cpu_features, AVX10);
       asm ("xgetbv" : "=a" (xcrlow), "=d" (xcrhigh) : "c" (0));
       /* Is YMM and XMM state usable?  */
       if ((xcrlow & (bit_YMM_state | bit_XMM_state))
@@ -131,6 +186,7 @@ update_active (struct cpu_features *cpu_features)
 	  /* Determine if AVX is usable.  */
 	  if (CPU_FEATURES_CPU_P (cpu_features, AVX))
 	    {
+	      os_vector_size |= os_ymm;
 	      CPU_FEATURE_SET (cpu_features, AVX);
 	      /* The following features depend on AVX being usable.  */
 	      /* Determine if AVX2 is usable.  */
@@ -143,8 +199,14 @@ update_active (struct cpu_features *cpu_features)
 		  cpu_features->preferred[index_arch_AVX_Fast_Unaligned_Load]
 		    |= bit_arch_AVX_Fast_Unaligned_Load;
 		}
+	      /* Determine if AVX-IFMA is usable.  */
+	      CPU_FEATURE_SET_ACTIVE (cpu_features, AVX_IFMA);
+	      /* Determine if AVX-NE-CONVERT is usable.  */
+	      CPU_FEATURE_SET_ACTIVE (cpu_features, AVX_NE_CONVERT);
 	      /* Determine if AVX-VNNI is usable.  */
 	      CPU_FEATURE_SET_ACTIVE (cpu_features, AVX_VNNI);
+	      /* Determine if AVX-VNNI-INT8 is usable.  */
+	      CPU_FEATURE_SET_ACTIVE (cpu_features, AVX_VNNI_INT8);
 	      /* Determine if FMA is usable.  */
 	      CPU_FEATURE_SET_ACTIVE (cpu_features, FMA);
 	      /* Determine if VAES is usable.  */
@@ -163,6 +225,7 @@ update_active (struct cpu_features *cpu_features)
 			 | bit_ZMM16_31_state))
 	      == (bit_Opmask_state | bit_ZMM0_15_state | bit_ZMM16_31_state))
 	    {
+	      os_vector_size |= os_zmm;
 	      /* Determine if AVX512F is usable.  */
 	      if (CPU_FEATURES_CPU_P (cpu_features, AVX512F))
 		{
@@ -207,6 +270,22 @@ update_active (struct cpu_features *cpu_features)
 	    }
 	}
 
+      if (CPU_FEATURES_CPU_P (cpu_features, AVX10)
+	  && cpu_features->basic.max_cpuid >= 0x24)
+	{
+	  __cpuid_count (
+	      0x24, 0, cpu_features->features[CPUID_INDEX_24_ECX_0].cpuid.eax,
+	      cpu_features->features[CPUID_INDEX_24_ECX_0].cpuid.ebx,
+	      cpu_features->features[CPUID_INDEX_24_ECX_0].cpuid.ecx,
+	      cpu_features->features[CPUID_INDEX_24_ECX_0].cpuid.edx);
+	  if (os_vector_size & os_xmm)
+	    CPU_FEATURE_SET_ACTIVE (cpu_features, AVX10_XMM);
+	  if (os_vector_size & os_ymm)
+	    CPU_FEATURE_SET_ACTIVE (cpu_features, AVX10_YMM);
+	  if (os_vector_size & os_zmm)
+	    CPU_FEATURE_SET_ACTIVE (cpu_features, AVX10_ZMM);
+	}
+
       /* Are XTILECFG and XTILEDATA states usable?  */
       if ((xcrlow & (bit_XTILECFG_state | bit_XTILEDATA_state))
 	  == (bit_XTILECFG_state | bit_XTILEDATA_state))
@@ -217,7 +296,15 @@ update_active (struct cpu_features *cpu_features)
 	  CPU_FEATURE_SET_ACTIVE (cpu_features, AMX_TILE);
 	  /* Determine if AMX_INT8 is usable.  */
 	  CPU_FEATURE_SET_ACTIVE (cpu_features, AMX_INT8);
+	  /* Determine if AMX_FP16 is usable.  */
+	  CPU_FEATURE_SET_ACTIVE (cpu_features, AMX_FP16);
+	  /* Determine if AMX_COMPLEX is usable.  */
+	  CPU_FEATURE_SET_ACTIVE (cpu_features, AMX_COMPLEX);
 	}
+
+      /* APX is usable only if the APX state is supported by kernel.  */
+      if ((xcrlow & bit_APX_state) != 0)
+	CPU_FEATURE_SET_ACTIVE (cpu_features, APX_F);
 
       /* These features are usable only when OSXSAVE is enabled.  */
       CPU_FEATURE_SET (cpu_features, XSAVE);
@@ -235,8 +322,10 @@ update_active (struct cpu_features *cpu_features)
 	  __cpuid_count (0xd, 0, eax, ebx, ecx, edx);
 	  if (ebx != 0)
 	    {
+	      /* NB: On AMX capable processors, ebx always includes AMX
+		 states.  */
 	      unsigned int xsave_state_full_size
-		= ALIGN_UP (ebx + STATE_SAVE_OFFSET, 64);
+		= ALIGN_UP (ebx + TLSDESC_CALL_REGISTER_SAVE_AREA, 64);
 
 	      cpu_features->xsave_state_size
 		= xsave_state_full_size;
@@ -248,6 +337,11 @@ update_active (struct cpu_features *cpu_features)
 		{
 		  unsigned int xstate_comp_offsets[32];
 		  unsigned int xstate_comp_sizes[32];
+#ifdef __x86_64__
+		  unsigned int xstate_amx_comp_offsets[32];
+		  unsigned int xstate_amx_comp_sizes[32];
+		  unsigned int amx_ecx;
+#endif
 		  unsigned int i;
 
 		  xstate_comp_offsets[0] = 0;
@@ -255,16 +349,39 @@ update_active (struct cpu_features *cpu_features)
 		  xstate_comp_offsets[2] = 576;
 		  xstate_comp_sizes[0] = 160;
 		  xstate_comp_sizes[1] = 256;
+#ifdef __x86_64__
+		  xstate_amx_comp_offsets[0] = 0;
+		  xstate_amx_comp_offsets[1] = 160;
+		  xstate_amx_comp_offsets[2] = 576;
+		  xstate_amx_comp_sizes[0] = 160;
+		  xstate_amx_comp_sizes[1] = 256;
+#endif
 
 		  for (i = 2; i < 32; i++)
 		    {
-		      if ((STATE_SAVE_MASK & (1 << i)) != 0)
+		      if ((FULL_STATE_SAVE_MASK & (1 << i)) != 0)
 			{
 			  __cpuid_count (0xd, i, eax, ebx, ecx, edx);
-			  xstate_comp_sizes[i] = eax;
+#ifdef __x86_64__
+			  /* Include this in xsave_state_full_size.  */
+			  amx_ecx = ecx;
+			  xstate_amx_comp_sizes[i] = eax;
+			  if ((AMX_STATE_SAVE_MASK & (1 << i)) != 0)
+			    {
+			      /* Exclude this from xsave_state_size.  */
+			      ecx = 0;
+			      xstate_comp_sizes[i] = 0;
+			    }
+			  else
+#endif
+			    xstate_comp_sizes[i] = eax;
 			}
 		      else
 			{
+#ifdef __x86_64__
+			  amx_ecx = 0;
+			  xstate_amx_comp_sizes[i] = 0;
+#endif
 			  ecx = 0;
 			  xstate_comp_sizes[i] = 0;
 			}
@@ -277,6 +394,15 @@ update_active (struct cpu_features *cpu_features)
 			  if ((ecx & (1 << 1)) != 0)
 			    xstate_comp_offsets[i]
 			      = ALIGN_UP (xstate_comp_offsets[i], 64);
+#ifdef __x86_64__
+			  xstate_amx_comp_offsets[i]
+			    = (xstate_amx_comp_offsets[i - 1]
+			       + xstate_amx_comp_sizes[i - 1]);
+			  if ((amx_ecx & (1 << 1)) != 0)
+			    xstate_amx_comp_offsets[i]
+			      = ALIGN_UP (xstate_amx_comp_offsets[i],
+					  64);
+#endif
 			}
 		    }
 
@@ -285,8 +411,23 @@ update_active (struct cpu_features *cpu_features)
 		    = xstate_comp_offsets[31] + xstate_comp_sizes[31];
 		  if (size)
 		    {
+#ifdef __x86_64__
+		      unsigned int amx_size
+			= (xstate_amx_comp_offsets[31]
+			   + xstate_amx_comp_sizes[31]);
+		      amx_size
+			= ALIGN_UP ((amx_size
+				     + TLSDESC_CALL_REGISTER_SAVE_AREA),
+				    64);
+		      /* Set xsave_state_full_size to the compact AMX
+			 state size for XSAVEC.  NB: xsave_state_full_size
+			 is only used in _dl_tlsdesc_dynamic_xsave and
+			 _dl_tlsdesc_dynamic_xsavec.  */
+		      cpu_features->xsave_state_full_size = amx_size;
+#endif
 		      cpu_features->xsave_state_size
-			= ALIGN_UP (size + STATE_SAVE_OFFSET, 64);
+			= ALIGN_UP (size + TLSDESC_CALL_REGISTER_SAVE_AREA,
+				    64);
 		      CPU_FEATURE_SET (cpu_features, XSAVEC);
 		    }
 		}
@@ -305,6 +446,8 @@ update_active (struct cpu_features *cpu_features)
       CPU_FEATURE_SET_ACTIVE (cpu_features, KL);
       CPU_FEATURE_SET_ACTIVE (cpu_features, WIDE_KL);
     }
+
+  dl_check_hwcap2 (cpu_features);
 
   cpu_features->isa_1 = get_isa_level (cpu_features);
 }
@@ -406,6 +549,216 @@ _Static_assert (((index_arch_Fast_Unaligned_Load
 		     == index_arch_Fast_Copy_Backward)),
 		"Incorrect index_arch_Fast_Unaligned_Load");
 
+
+/* Intel Family-6 microarch list.  */
+enum
+{
+  /* Atom processors.  */
+  INTEL_ATOM_BONNELL,
+  INTEL_ATOM_SILVERMONT,
+  INTEL_ATOM_AIRMONT,
+  INTEL_ATOM_GOLDMONT,
+  INTEL_ATOM_GOLDMONT_PLUS,
+  INTEL_ATOM_SIERRAFOREST,
+  INTEL_ATOM_GRANDRIDGE,
+  INTEL_ATOM_TREMONT,
+
+  /* Bigcore processors.  */
+  INTEL_BIGCORE_MEROM,
+  INTEL_BIGCORE_PENRYN,
+  INTEL_BIGCORE_DUNNINGTON,
+  INTEL_BIGCORE_NEHALEM,
+  INTEL_BIGCORE_WESTMERE,
+  INTEL_BIGCORE_SANDYBRIDGE,
+  INTEL_BIGCORE_IVYBRIDGE,
+  INTEL_BIGCORE_HASWELL,
+  INTEL_BIGCORE_BROADWELL,
+  INTEL_BIGCORE_SKYLAKE,
+  INTEL_BIGCORE_KABYLAKE,
+  INTEL_BIGCORE_COMETLAKE,
+  INTEL_BIGCORE_SKYLAKE_AVX512,
+  INTEL_BIGCORE_CANNONLAKE,
+  INTEL_BIGCORE_ICELAKE,
+  INTEL_BIGCORE_TIGERLAKE,
+  INTEL_BIGCORE_ROCKETLAKE,
+  INTEL_BIGCORE_SAPPHIRERAPIDS,
+  INTEL_BIGCORE_RAPTORLAKE,
+  INTEL_BIGCORE_EMERALDRAPIDS,
+  INTEL_BIGCORE_METEORLAKE,
+  INTEL_BIGCORE_LUNARLAKE,
+  INTEL_BIGCORE_ARROWLAKE,
+  INTEL_BIGCORE_GRANITERAPIDS,
+
+  /* Mixed (bigcore + atom SOC).  */
+  INTEL_MIXED_LAKEFIELD,
+  INTEL_MIXED_ALDERLAKE,
+
+  /* KNL.  */
+  INTEL_KNIGHTS_MILL,
+  INTEL_KNIGHTS_LANDING,
+
+  /* Unknown.  */
+  INTEL_UNKNOWN,
+};
+
+static unsigned int
+intel_get_fam6_microarch (unsigned int model,
+			  __attribute__ ((unused)) unsigned int stepping)
+{
+  switch (model)
+    {
+    case 0x1C:
+    case 0x26:
+      return INTEL_ATOM_BONNELL;
+    case 0x27:
+    case 0x35:
+    case 0x36:
+      /* Really Saltwell, but Saltwell is just a die shrink of Bonnell
+         (microarchitecturally identical).  */
+      return INTEL_ATOM_BONNELL;
+    case 0x37:
+    case 0x4A:
+    case 0x4D:
+    case 0x5D:
+      return INTEL_ATOM_SILVERMONT;
+    case 0x4C:
+    case 0x5A:
+    case 0x75:
+      return INTEL_ATOM_AIRMONT;
+    case 0x5C:
+    case 0x5F:
+      return INTEL_ATOM_GOLDMONT;
+    case 0x7A:
+      return INTEL_ATOM_GOLDMONT_PLUS;
+    case 0xAF:
+      return INTEL_ATOM_SIERRAFOREST;
+    case 0xB6:
+      return INTEL_ATOM_GRANDRIDGE;
+    case 0x86:
+    case 0x96:
+    case 0x9C:
+      return INTEL_ATOM_TREMONT;
+    case 0x0F:
+    case 0x16:
+      return INTEL_BIGCORE_MEROM;
+    case 0x17:
+      return INTEL_BIGCORE_PENRYN;
+    case 0x1D:
+      return INTEL_BIGCORE_DUNNINGTON;
+    case 0x1A:
+    case 0x1E:
+    case 0x1F:
+    case 0x2E:
+      return INTEL_BIGCORE_NEHALEM;
+    case 0x25:
+    case 0x2C:
+    case 0x2F:
+      return INTEL_BIGCORE_WESTMERE;
+    case 0x2A:
+    case 0x2D:
+      return INTEL_BIGCORE_SANDYBRIDGE;
+    case 0x3A:
+    case 0x3E:
+      return INTEL_BIGCORE_IVYBRIDGE;
+    case 0x3C:
+    case 0x3F:
+    case 0x45:
+    case 0x46:
+      return INTEL_BIGCORE_HASWELL;
+    case 0x3D:
+    case 0x47:
+    case 0x4F:
+    case 0x56:
+      return INTEL_BIGCORE_BROADWELL;
+    case 0x4E:
+    case 0x5E:
+      return INTEL_BIGCORE_SKYLAKE;
+    case 0x8E:
+    /*
+     Stepping = {9}
+        -> Amberlake
+     Stepping = {10}
+        -> Coffeelake
+     Stepping = {11, 12}
+        -> Whiskeylake
+     else
+        -> Kabylake
+
+     All of these are derivatives of Kabylake (Skylake client).
+     */
+	  return INTEL_BIGCORE_KABYLAKE;
+    case 0x9E:
+    /*
+     Stepping = {10, 11, 12, 13}
+        -> Coffeelake
+     else
+        -> Kabylake
+
+     Coffeelake is a derivatives of Kabylake (Skylake client).
+     */
+	  return INTEL_BIGCORE_KABYLAKE;
+    case 0xA5:
+    case 0xA6:
+      return INTEL_BIGCORE_COMETLAKE;
+    case 0x66:
+      return INTEL_BIGCORE_CANNONLAKE;
+    case 0x55:
+    /*
+     Stepping = {6, 7}
+        -> Cascadelake
+     Stepping = {11}
+        -> Cooperlake
+     else
+        -> Skylake-avx512
+
+     These are all microarchitecturally identical, so use
+     Skylake-avx512 for all of them.
+     */
+      return INTEL_BIGCORE_SKYLAKE_AVX512;
+    case 0x6A:
+    case 0x6C:
+    case 0x7D:
+    case 0x7E:
+    case 0x9D:
+      return INTEL_BIGCORE_ICELAKE;
+    case 0x8C:
+    case 0x8D:
+      return INTEL_BIGCORE_TIGERLAKE;
+    case 0xA7:
+      return INTEL_BIGCORE_ROCKETLAKE;
+    case 0x8F:
+      return INTEL_BIGCORE_SAPPHIRERAPIDS;
+    case 0xB7:
+    case 0xBA:
+    case 0xBF:
+      return INTEL_BIGCORE_RAPTORLAKE;
+    case 0xCF:
+      return INTEL_BIGCORE_EMERALDRAPIDS;
+    case 0xAA:
+    case 0xAC:
+      return INTEL_BIGCORE_METEORLAKE;
+    case 0xbd:
+      return INTEL_BIGCORE_LUNARLAKE;
+    case 0xc6:
+      return INTEL_BIGCORE_ARROWLAKE;
+    case 0xAD:
+    case 0xAE:
+      return INTEL_BIGCORE_GRANITERAPIDS;
+    case 0x8A:
+      return INTEL_MIXED_LAKEFIELD;
+    case 0x97:
+    case 0x9A:
+    case 0xBE:
+      return INTEL_MIXED_ALDERLAKE;
+    case 0x85:
+      return INTEL_KNIGHTS_MILL;
+    case 0x57:
+      return INTEL_KNIGHTS_LANDING;
+    default:
+      return INTEL_UNKNOWN;
+    }
+}
+
 static inline void
 init_cpu_features (struct cpu_features *cpu_features)
 {
@@ -415,6 +768,7 @@ init_cpu_features (struct cpu_features *cpu_features)
   unsigned int stepping = 0;
   enum cpu_features_kind kind;
 
+  cpu_features->cachesize_non_temporal_divisor = 4;
 #if !HAS_CPUID
   if (__get_cpuid_max (0, 0) == 0)
     {
@@ -442,129 +796,159 @@ init_cpu_features (struct cpu_features *cpu_features)
       if (family == 0x06)
 	{
 	  model += extended_model;
-	  switch (model)
+	  unsigned int microarch
+	      = intel_get_fam6_microarch (model, stepping);
+
+	  switch (microarch)
 	    {
-	    case 0x1c:
-	    case 0x26:
-	      /* BSF is slow on Atom.  */
+	      /* Atom / KNL tuning.  */
+	    case INTEL_ATOM_BONNELL:
+	      /* BSF is slow on Bonnell.  */
 	      cpu_features->preferred[index_arch_Slow_BSF]
-		|= bit_arch_Slow_BSF;
+		  |= bit_arch_Slow_BSF;
 	      break;
 
-	    case 0x57:
-	      /* Knights Landing.  Enable Silvermont optimizations.  */
-
-	    case 0x7a:
 	      /* Unaligned load versions are faster than SSSE3
-		 on Goldmont Plus.  */
+		     on Airmont, Silvermont, Goldmont, and Goldmont Plus.  */
+	    case INTEL_ATOM_AIRMONT:
+	    case INTEL_ATOM_SILVERMONT:
+	    case INTEL_ATOM_GOLDMONT:
+	    case INTEL_ATOM_GOLDMONT_PLUS:
 
-	    case 0x5c:
-	    case 0x5f:
-	      /* Unaligned load versions are faster than SSSE3
-		 on Goldmont.  */
+          /* Knights Landing.  Enable Silvermont optimizations.  */
+	    case INTEL_KNIGHTS_LANDING:
 
-	    case 0x4c:
-	    case 0x5a:
-	    case 0x75:
-	      /* Airmont is a die shrink of Silvermont.  */
-
-	    case 0x37:
-	    case 0x4a:
-	    case 0x4d:
-	    case 0x5d:
-	      /* Unaligned load versions are faster than SSSE3
-		 on Silvermont.  */
 	      cpu_features->preferred[index_arch_Fast_Unaligned_Load]
-		|= (bit_arch_Fast_Unaligned_Load
-		    | bit_arch_Fast_Unaligned_Copy
-		    | bit_arch_Prefer_PMINUB_for_stringop
-		    | bit_arch_Slow_SSE4_2);
+		  |= (bit_arch_Fast_Unaligned_Load
+		      | bit_arch_Fast_Unaligned_Copy
+		      | bit_arch_Prefer_PMINUB_for_stringop
+		      | bit_arch_Slow_SSE4_2);
 	      break;
 
-	    case 0x86:
-	    case 0x96:
-	    case 0x9c:
+	    case INTEL_ATOM_TREMONT:
 	      /* Enable rep string instructions, unaligned load, unaligned
-	         copy, pminub and avoid SSE 4.2 on Tremont.  */
+		 copy, pminub and avoid SSE 4.2 on Tremont.  */
 	      cpu_features->preferred[index_arch_Fast_Rep_String]
-		|= (bit_arch_Fast_Rep_String
-		    | bit_arch_Fast_Unaligned_Load
-		    | bit_arch_Fast_Unaligned_Copy
-		    | bit_arch_Prefer_PMINUB_for_stringop
-		    | bit_arch_Slow_SSE4_2);
+		  |= (bit_arch_Fast_Rep_String
+		      | bit_arch_Fast_Unaligned_Load
+		      | bit_arch_Fast_Unaligned_Copy
+		      | bit_arch_Prefer_PMINUB_for_stringop
+		      | bit_arch_Slow_SSE4_2);
 	      break;
 
+	   /*
+	    Default tuned Knights microarch.
+	    case INTEL_KNIGHTS_MILL:
+        */
+
+	   /*
+	    Default tuned atom microarch.
+	    case INTEL_ATOM_SIERRAFOREST:
+	    case INTEL_ATOM_GRANDRIDGE:
+	   */
+
+	      /* Bigcore/Default Tuning.  */
 	    default:
+	    default_tuning:
 	      /* Unknown family 0x06 processors.  Assuming this is one
 		 of Core i3/i5/i7 processors if AVX is available.  */
 	      if (!CPU_FEATURES_CPU_P (cpu_features, AVX))
 		break;
-	      /* Fall through.  */
 
-	    case 0x1a:
-	    case 0x1e:
-	    case 0x1f:
-	    case 0x25:
-	    case 0x2c:
-	    case 0x2e:
-	    case 0x2f:
+	    enable_modern_features:
 	      /* Rep string instructions, unaligned load, unaligned copy,
 		 and pminub are fast on Intel Core i3, i5 and i7.  */
 	      cpu_features->preferred[index_arch_Fast_Rep_String]
-		|= (bit_arch_Fast_Rep_String
-		    | bit_arch_Fast_Unaligned_Load
-		    | bit_arch_Fast_Unaligned_Copy
-		    | bit_arch_Prefer_PMINUB_for_stringop);
+		  |= (bit_arch_Fast_Rep_String
+		      | bit_arch_Fast_Unaligned_Load
+		      | bit_arch_Fast_Unaligned_Copy
+		      | bit_arch_Prefer_PMINUB_for_stringop);
 	      break;
+
+	    case INTEL_BIGCORE_NEHALEM:
+	    case INTEL_BIGCORE_WESTMERE:
+	      /* Older CPUs prefer non-temporal stores at lower threshold.  */
+	      cpu_features->cachesize_non_temporal_divisor = 8;
+	      goto enable_modern_features;
+
+	      /* Older Bigcore microarch (smaller non-temporal store
+		 threshold).  */
+	    case INTEL_BIGCORE_SANDYBRIDGE:
+	    case INTEL_BIGCORE_IVYBRIDGE:
+	    case INTEL_BIGCORE_HASWELL:
+	    case INTEL_BIGCORE_BROADWELL:
+	      cpu_features->cachesize_non_temporal_divisor = 8;
+	      goto default_tuning;
+
+	      /* Newer Bigcore microarch (larger non-temporal store
+		 threshold).  */
+	    case INTEL_BIGCORE_SKYLAKE:
+	    case INTEL_BIGCORE_KABYLAKE:
+	    case INTEL_BIGCORE_COMETLAKE:
+	    case INTEL_BIGCORE_SKYLAKE_AVX512:
+	    case INTEL_BIGCORE_CANNONLAKE:
+	    case INTEL_BIGCORE_ICELAKE:
+	    case INTEL_BIGCORE_TIGERLAKE:
+	    case INTEL_BIGCORE_ROCKETLAKE:
+	    case INTEL_BIGCORE_RAPTORLAKE:
+	    case INTEL_BIGCORE_METEORLAKE:
+	    case INTEL_BIGCORE_LUNARLAKE:
+	    case INTEL_BIGCORE_ARROWLAKE:
+	    case INTEL_BIGCORE_SAPPHIRERAPIDS:
+	    case INTEL_BIGCORE_EMERALDRAPIDS:
+	    case INTEL_BIGCORE_GRANITERAPIDS:
+	      cpu_features->cachesize_non_temporal_divisor = 2;
+	      goto default_tuning;
+
+	      /* Default tuned Mixed (bigcore + atom SOC). */
+	    case INTEL_MIXED_LAKEFIELD:
+	    case INTEL_MIXED_ALDERLAKE:
+	      cpu_features->cachesize_non_temporal_divisor = 2;
+	      goto default_tuning;
 	    }
 
-	 /* Disable TSX on some processors to avoid TSX on kernels that
-	    weren't updated with the latest microcode package (which
-	    disables broken feature by default).  */
-	 switch (model)
+	      /* Disable TSX on some processors to avoid TSX on kernels that
+		 weren't updated with the latest microcode package (which
+		 disables broken feature by default).  */
+	  switch (microarch)
 	    {
-	    case 0x55:
+	    case INTEL_BIGCORE_SKYLAKE_AVX512:
+	      /* 0x55 (Skylake-avx512) && stepping <= 5 disable TSX. */
 	      if (stepping <= 5)
 		goto disable_tsx;
 	      break;
-	    case 0x8e:
-	      /* NB: Although the errata documents that for model == 0x8e,
-		 only 0xb stepping or lower are impacted, the intention of
-		 the errata was to disable TSX on all client processors on
-		 all steppings.  Include 0xc stepping which is an Intel
-		 Core i7-8665U, a client mobile processor.  */
-	    case 0x9e:
+
+	    case INTEL_BIGCORE_KABYLAKE:
+	      /* NB: Although the errata documents that for model == 0x8e
+		     (kabylake skylake client), only 0xb stepping or lower are
+		     impacted, the intention of the errata was to disable TSX on
+		     all client processors on all steppings.  Include 0xc
+		     stepping which is an Intel Core i7-8665U, a client mobile
+		     processor.  */
 	      if (stepping > 0xc)
 		break;
 	      /* Fall through.  */
-	    case 0x4e:
-	    case 0x5e:
-	      {
+	    case INTEL_BIGCORE_SKYLAKE:
 		/* Disable Intel TSX and enable RTM_ALWAYS_ABORT for
 		   processors listed in:
 
 https://www.intel.com/content/www/us/en/support/articles/000059422/processors.html
 		 */
-disable_tsx:
+	    disable_tsx:
 		CPU_FEATURE_UNSET (cpu_features, HLE);
 		CPU_FEATURE_UNSET (cpu_features, RTM);
 		CPU_FEATURE_SET (cpu_features, RTM_ALWAYS_ABORT);
-	      }
-	      break;
-	    case 0x3f:
-	      /* Xeon E7 v3 with stepping >= 4 has working TSX.  */
-	      if (stepping >= 4)
 		break;
-	      /* Fall through.  */
-	    case 0x3c:
-	    case 0x45:
-	    case 0x46:
-	      /* Disable Intel TSX on Haswell processors (except Xeon E7 v3
-		 with stepping >= 4) to avoid TSX on kernels that weren't
-		 updated with the latest microcode package (which disables
-		 broken feature by default).  */
-	      CPU_FEATURE_UNSET (cpu_features, RTM);
-	      break;
+
+	    case INTEL_BIGCORE_HASWELL:
+		/* Xeon E7 v3 (model == 0x3f) with stepping >= 4 has working
+		   TSX.  Haswell also include other model numbers that have
+		   working TSX.  */
+		if (model == 0x3f && stepping >= 4)
+		break;
+
+		CPU_FEATURE_UNSET (cpu_features, RTM);
+		break;
 	    }
 	}
 
@@ -716,6 +1100,11 @@ no_cpuid:
 #if HAVE_TUNABLES
   TUNABLE_GET (hwcaps, tunable_val_t *, TUNABLE_CALLBACK (set_hwcaps));
 
+#ifdef __LP64__
+  TUNABLE_GET (prefer_map_32bit_exec, tunable_val_t *,
+	       TUNABLE_CALLBACK (set_prefer_map_32bit_exec));
+#endif
+#endif /* HAVE_TUNABLES */
   bool disable_xsave_features = false;
 
   if (!CPU_FEATURE_USABLE_P (cpu_features, OSXSAVE))
@@ -770,13 +1159,6 @@ no_cpuid:
       CPU_FEATURE_UNSET (cpu_features, FMA4);
     }
 
-#elif defined SHARED
-  /* Reuse dl_platform, dl_hwcap and dl_hwcap_mask for x86.  The
-     glibc.cpu.hwcap_mask tunable is initialized already, so no
-     need to do this.  */
-  GLRO(dl_hwcap_mask) = HWCAP_IMPORTANT;
-#endif
-
 #ifdef __x86_64__
   GLRO(dl_hwcap) = HWCAP_X86_64;
   if (cpu_features->basic.kind == arch_kind_intel)
@@ -823,60 +1205,53 @@ no_cpuid:
     GLRO(dl_platform) = "i586";
 #endif
 
+#if HAVE_TUNABLES
 #if CET_ENABLED
-# if HAVE_TUNABLES
   TUNABLE_GET (x86_ibt, tunable_val_t *,
 	       TUNABLE_CALLBACK (set_x86_ibt));
   TUNABLE_GET (x86_shstk, tunable_val_t *,
 	       TUNABLE_CALLBACK (set_x86_shstk));
-# endif
-
-  /* Check CET status.  */
-  unsigned int cet_status = get_cet_status ();
-
-  if ((cet_status & GNU_PROPERTY_X86_FEATURE_1_IBT) == 0)
-    CPU_FEATURE_UNSET (cpu_features, IBT)
-  if ((cet_status & GNU_PROPERTY_X86_FEATURE_1_SHSTK) == 0)
-    CPU_FEATURE_UNSET (cpu_features, SHSTK)
-
-  if (cet_status)
-    {
-      GL(dl_x86_feature_1) = cet_status;
-
-# ifndef SHARED
-      /* Check if IBT and SHSTK are enabled by kernel.  */
-      if ((cet_status & GNU_PROPERTY_X86_FEATURE_1_IBT)
-	  || (cet_status & GNU_PROPERTY_X86_FEATURE_1_SHSTK))
-	{
-	  /* Disable IBT and/or SHSTK if they are enabled by kernel, but
-	     disabled by environment variable:
-
-	     GLIBC_TUNABLES=glibc.cpu.hwcaps=-IBT,-SHSTK
-	   */
-	  unsigned int cet_feature = 0;
-	  if (!CPU_FEATURE_USABLE (IBT))
-	    cet_feature |= GNU_PROPERTY_X86_FEATURE_1_IBT;
-	  if (!CPU_FEATURE_USABLE (SHSTK))
-	    cet_feature |= GNU_PROPERTY_X86_FEATURE_1_SHSTK;
-
-	  if (cet_feature)
-	    {
-	      int res = dl_cet_disable_cet (cet_feature);
-
-	      /* Clear the disabled bits in dl_x86_feature_1.  */
-	      if (res == 0)
-		GL(dl_x86_feature_1) &= ~cet_feature;
-	    }
-
-	  /* Lock CET if IBT or SHSTK is enabled in executable.  Don't
-	     lock CET if IBT or SHSTK is enabled permissively.  */
-	  if (GL(dl_x86_feature_control).ibt != cet_permissive
-	      && GL(dl_x86_feature_control).shstk != cet_permissive)
-	    dl_cet_lock_cet ();
-	}
-# endif
-    }
 #endif
+
+  if (MINIMUM_X86_ISA_LEVEL >= AVX_X86_ISA_LEVEL
+      || (GLRO(dl_x86_cpu_features).xsave_state_size != 0))
+    {
+      if (CPU_FEATURE_USABLE_P (cpu_features, XSAVEC))
+	{
+#ifdef __x86_64__
+	  GLRO(dl_x86_64_runtime_resolve) = _dl_runtime_resolve_xsavec;
+#endif
+#ifdef SHARED
+	  GLRO(dl_x86_tlsdesc_dynamic) = _dl_tlsdesc_dynamic_xsavec;
+#endif
+	}
+      else
+	{
+#ifdef __x86_64__
+	  GLRO(dl_x86_64_runtime_resolve) = _dl_runtime_resolve_xsave;
+#endif
+#ifdef SHARED
+	  GLRO(dl_x86_tlsdesc_dynamic) = _dl_tlsdesc_dynamic_xsave;
+#endif
+	}
+    }
+  else
+    {
+#ifdef __x86_64__
+      GLRO(dl_x86_64_runtime_resolve) = _dl_runtime_resolve_fxsave;
+# ifdef SHARED
+      GLRO(dl_x86_tlsdesc_dynamic) = _dl_tlsdesc_dynamic_fxsave;
+# endif
+#else
+# ifdef SHARED
+      if (CPU_FEATURE_USABLE_P (cpu_features, FXSR))
+	GLRO(dl_x86_tlsdesc_dynamic) = _dl_tlsdesc_dynamic_fxsave;
+      else
+	GLRO(dl_x86_tlsdesc_dynamic) = _dl_tlsdesc_dynamic_fnsave;
+# endif
+#endif
+    }
+#endif /* HAVE_TUNABLES */
 
 /* #ifndef SHARED */
   /* NB: In libc.a, call init_cacheinfo.  */

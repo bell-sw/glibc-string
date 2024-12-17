@@ -1,6 +1,6 @@
 /* Initialize CPU feature data.  AArch64 version.
    This file is part of the GNU C Library.
-   Copyright (C) 2017-2023 Free Software Foundation, Inc.
+   Copyright (C) 2017-2024 Free Software Foundation, Inc.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -34,25 +34,28 @@
 struct cpu_list
 {
   const char *name;
+  size_t len;
   uint64_t midr;
 };
 
-static struct cpu_list cpu_list[] = {
-      {"thunderxt88",	 0x430F0A10},
-      {"thunderx2t99",   0x431F0AF0},
-      {"thunderx2t99p1", 0x420F5160},
-      {"ares",		 0x411FD0C0},
-      {"emag",		 0x503F0001},
-      {"kunpeng920", 	 0x481FD010},
-      {"a64fx",		 0x460F0010},
-      {"generic", 	 0x0}
+static const struct cpu_list cpu_list[] =
+{
+#define CPU_LIST_ENTRY(__str, __num) { __str, sizeof (__str) - 1, __num }
+  CPU_LIST_ENTRY ("thunderxt88",    0x430F0A10),
+  CPU_LIST_ENTRY ("thunderx2t99",   0x431F0AF0),
+  CPU_LIST_ENTRY ("thunderx2t99p1", 0x420F5160),
+  CPU_LIST_ENTRY ("ares",           0x411FD0C0),
+  CPU_LIST_ENTRY ("emag",           0x503F0001),
+  CPU_LIST_ENTRY ("kunpeng920",     0x481FD010),
+  CPU_LIST_ENTRY ("a64fx",          0x460F0010),
+  CPU_LIST_ENTRY ("generic",        0x0),
 };
 
 static uint64_t
-get_midr_from_mcpu (const char *mcpu)
+get_midr_from_mcpu (const struct tunable_str_t *mcpu)
 {
-  for (int i = 0; i < sizeof (cpu_list) / sizeof (struct cpu_list); i++)
-    if (strcmp (mcpu, cpu_list[i].name) == 0)
+  for (int i = 0; i < array_length (cpu_list); i++)
+    if (tunable_strcmp (mcpu, cpu_list[i].name, cpu_list[i].len))
       return cpu_list[i].midr;
 
   return UINT64_MAX;
@@ -108,7 +111,9 @@ init_cpu_features (struct cpu_features *cpu_features)
 
 #if HAVE_TUNABLES
   /* Get the tunable override.  */
-  const char *mcpu = TUNABLE_GET (glibc, cpu, name, const char *, NULL);
+  const struct tunable_str_t *mcpu = TUNABLE_GET (glibc, cpu, name,
+						  struct tunable_str_t *,
+						  NULL);
   if (mcpu != NULL)
     midr = get_midr_from_mcpu (mcpu);
 #endif

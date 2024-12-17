@@ -1,5 +1,5 @@
 /* Data for x86 version of processor capability information.
-   Copyright (C) 2017-2023 Free Software Foundation, Inc.
+   Copyright (C) 2017-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -86,3 +86,21 @@ PROCINFO_CLASS const char _dl_x86_platforms[4][9]
 #else
 ,
 #endif
+
+#if HAVE_TUNABLES
+#if defined SHARED && !IS_IN (ldconfig)
+# if !defined PROCINFO_DECL
+  ._dl_x86_tlsdesc_dynamic
+# else
+PROCINFO_CLASS void * _dl_x86_tlsdesc_dynamic
+# endif
+# ifndef PROCINFO_DECL
+= NULL
+# endif
+# ifdef PROCINFO_DECL
+;
+# else
+,
+# endif
+#endif
+#endif /* HAVE_TUNABLES */

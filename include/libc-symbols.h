@@ -1,6 +1,6 @@
 /* Support macros for making weak and strong aliases for symbols,
    and for using symbol sets and linker warnings with GNU ld.
-   Copyright (C) 1995-2023 Free Software Foundation, Inc.
+   Copyright (C) 1995-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -237,99 +237,32 @@ requires at runtime the shared libraries from the glibc version used \
 for linking")
 #endif
 
-/* Resource Freeing Hooks:
-
-   Normally a process exits and the OS cleans up any allocated
-   memory.  However, when tooling like mtrace or valgrind is monitoring
-   the process we need to free all resources that are part of the
-   process in order to provide the consistency required to track
-   memory leaks.
-
-   A single public API exists and is __libc_freeres(), and this is used
-   by applications like valgrind to freee resouces.
-
-   There are 3 cases:
-
-   (a) __libc_freeres
-
-	In this case all you need to do is define the freeing routine:
-
-	foo.c:
-	libfoo_freeres_fn (foo_freeres)
-	{
-	  complex_free (mem);
-	}
-
-	This ensures the function is called at the right point to free
-	resources.
-
-   (b) __libc_freeres_ptr
-
-	The framework for (a) iterates over the list of pointers-to-free
-	in (b) and frees them.
-
-	foo.c:
-	libc_freeres_ptr (static char *foo_buffer);
-
-	Freeing these resources alaways happens last and is equivalent
-	to registering a function that does 'free (foo_buffer)'.
-
-   (c) Explicit lists of free routines to call or objects to free.
-
-	It is the intended goal to remove (a) and (b) which have some
-	non-determinism based on link order, and instead use explicit
-	lists of functions and frees to resolve cleanup ordering issues
-	and make it easy to debug and maintain.
-
-	As of today the following subsystems use (c):
-
-	Per-thread cleanup:
-	* malloc/thread-freeres.c
-
-	libdl cleanup:
-	* dlfcn/dlfreeres.c
-
-	libpthread cleanup:
-	* nptl/nptlfreeres.c
-
-	So if you need any shutdown routines to run you should add them
-	directly to the appropriate subsystem's shutdown list.  */
-
-/* Resource pointers to free in libc.so.  */
-#define libc_freeres_ptr(decl) \
-  __make_section_unallocated ("__libc_freeres_ptrs, \"aw\", %nobits") \
-  decl __attribute__ ((section ("__libc_freeres_ptrs" __sec_comment)))
-
-/* Resource freeing functions from libc.so go in this section.  */
-#define __libc_freeres_fn_section \
-  __attribute__ ((__used__, section ("__libc_freeres_fn")))
-
-/* Resource freeing functions for libc.so.  */
-#define libc_freeres_fn(name) \
-  static void name (void) __attribute_used__ __libc_freeres_fn_section;	\
-  text_set_element (__libc_subfreeres, name);				\
-  static void name (void)
-
 /* Declare SYMBOL to be TYPE (`function' or `object') of SIZE bytes
    alias to ORIGINAL, when the assembler supports such declarations
    (such as in ELF).
    This is only necessary when defining something in assembly, or playing
    funny alias games where the size should be other than what the compiler
    thinks it is.  */
-#ifdef __ASSEMBLER__
-# define declare_object_symbol_alias(symbol, original, size) \
+#define declare_object_symbol_alias(symbol, original, size) \
   declare_object_symbol_alias_1 (symbol, original, size)
+#ifdef __ASSEMBLER__
 # define declare_object_symbol_alias_1(symbol, original, s_size) \
    strong_alias (original, symbol) ASM_LINE_SEP \
    .type C_SYMBOL_NAME (symbol), %object ASM_LINE_SEP \
    .size C_SYMBOL_NAME (symbol), s_size ASM_LINE_SEP
 #else /* Not __ASSEMBLER__.  */
 # ifdef HAVE_ASM_SET_DIRECTIVE
-#  define declare_symbol_alias_1_alias(symbol, original) \
-     ".set " __SYMBOL_PREFIX #symbol ", " __SYMBOL_PREFIX #original
+#  define declare_object_symbol_alias_1(symbol, original, size) \
+     asm (".global " __SYMBOL_PREFIX # symbol "\n" \
+	  ".type " __SYMBOL_PREFIX # symbol ", %object\n" \
+	  ".set " __SYMBOL_PREFIX #symbol ", " __SYMBOL_PREFIX original "\n" \
+	  ".size " __SYMBOL_PREFIX #symbol ", " #size "\n");
 # else
-#  define declare_symbol_alias_1_alias(symbol, original) \
-     __SYMBOL_PREFIX #symbol " = " __SYMBOL_PREFIX #original
+#  define declare_object_symbol_alias_1(symbol, original, size) \
+     asm (".global " __SYMBOL_PREFIX # symbol "\n" \
+	  ".type " __SYMBOL_PREFIX # symbol ", %object\n" \
+	  __SYMBOL_PREFIX #symbol " = " __SYMBOL_PREFIX original "\n" \
+	  ".size " __SYMBOL_PREFIX #symbol ", " #size "\n");
 # endif /* HAVE_ASM_SET_DIRECTIVE */
 #endif /* __ASSEMBLER__ */
 
@@ -405,7 +338,7 @@ for linking")
   _set_symbol_version (real, #name "@@" #version)
 # endif
 
-/* Evalutes to a string literal for VERSION in LIB.  */
+/* Evaluates to a string literal for VERSION in LIB.  */
 # define symbol_version_string(lib, version) \
   _symbol_version_stringify_1 (VERSION_##lib##_##version)
 # define _symbol_version_stringify_1(arg) _symbol_version_stringify_2 (arg)
@@ -667,8 +600,10 @@ for linking")
 #endif
 
 #if IS_IN (libmvec)
+# define libmvec_hidden_proto(name, attrs...) hidden_proto (name, ##attrs)
 # define libmvec_hidden_def(name) hidden_def (name)
 #else
+# define libmvec_hidden_proto(name, attrs...)
 # define libmvec_hidden_def(name)
 #endif
 
@@ -779,7 +714,7 @@ for linking")
 
    If you have an implementation for foo which e.g. uses a special hardware
    feature which isn't available on all machines where this libc.so will be
-   used but decideable if available at runtime e.g. via hwcaps, you can provide
+   used but decidable if available at runtime e.g. via hwcaps, you can provide
    two or multiple implementations of foo:
 
    int __foo_default (int __bar)
@@ -832,7 +767,7 @@ for linking")
 			  : __foo_default);
 
    This will define the ifunc'ed symbol foo like above.  The redirection of foo
-   in header file is needed to omit an additional defintion of __GI_foo which
+   in header file is needed to omit an additional definition of __GI_foo which
    would end in a linker error while linking libc.so.  You have to specify
    __redirect_foo as first parameter which is used within libc_ifunc_redirected
    macro in conjunction with typeof to define the ifunc'ed symbol foo.
