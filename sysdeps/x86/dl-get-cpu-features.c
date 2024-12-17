@@ -48,8 +48,8 @@ __get_cpu_features (void)
   return &GLRO(dl_x86_cpu_features);
 }
 
-extern int printf(const char *format, ...);
-#define _dl_printf printf
+extern int dprintf(int fd, const char *format, ...);
+#define _dl_printf(...) dprintf(1, __VA_ARGS__)
 #define _dl_diagnostics_cpu __print_cpu_diagnostics
 
 static void

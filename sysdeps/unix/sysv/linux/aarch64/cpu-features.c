@@ -203,7 +203,8 @@ __get_cpu_features (void)
   return &GLRO(dl_aarch64_cpu_features);
 }
 
-extern int printf(const char *format, ...);
+extern int dprintf(int fd, const char *format, ...);
+#define printf(...) dprintf(1, __VA_ARGS__)
 
 static void print_cpu(const char *name)
 {
